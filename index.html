@@ -1,0 +1,90 @@
+<!-- DGM-MAT PC Chat Cockpit | served under /app by the local DGM-MAT API -->
+<!doctype html>
+<html lang="pt-PT">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1020">
+  <meta name="description" content="Chat local para dar instruções ao cérebro DGM-MAT no PC">
+  <link rel="stylesheet" href="./styles.css">
+  <title>DGM-MAT · Chat PC</title>
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand"><div class="brand-mark">D</div><div><strong>DGM-MAT</strong><small>Chat local · PC</small></div></div>
+      <button class="new-chat" id="newChat"><span>＋</span> Nova conversa</button>
+      <div class="connection"><span class="dot" id="statusDot"></span><span id="statusText">A verificar ligação…</span></div>
+      <div class="sidebar-label">CONVERSAS</div>
+      <div class="thread-list" id="threadList" aria-label="Histórico de conversas"></div>
+      <div class="sidebar-bottom">
+        <button class="quiet-button" id="refreshButton">↻ Sincronizar histórico</button>
+        <button class="quiet-button" id="pairButton">♧ Ligar ao cérebro</button>
+        <div class="security-note">PC local · sessão temporária</div>
+      </div>
+    </aside>
+    <main class="workspace">
+      <header class="topbar">
+        <div class="conversation-heading"><h1 id="conversationTitle">Nova conversa</h1><p id="contextLine">DGM-MAT · PC local</p></div>
+        <button class="icon-button" id="renameButton" title="Renomear conversa" aria-label="Renomear conversa">✎</button>
+      </header>
+      <section class="chat" id="chat" aria-live="polite">
+        <div class="welcome" id="welcome">
+          <div class="welcome-mark">D</div>
+          <h2>Vamos trabalhar.</h2>
+          <p>Cola um prompt, dá uma ordem ou anexa documentação textual. O DGM-MAT mantém o histórico no PC.</p>
+          <div class="suggestions">
+            <button data-prompt="Faz um diagnóstico do estado real do DGM-MAT e indica os bloqueios comprovados.">Diagnosticar o DGM-MAT</button>
+            <button data-prompt="Audita o projeto atual com base no código e nos testes reais. Não alteres ficheiros antes de apresentar o plano.">Auditar um projeto</button>
+            <button data-prompt="Resume o estado da última missão e indica o próximo passo seguro.">Continuar trabalho</button>
+          </div>
+        </div>
+        <div id="messages"></div>
+      </section>
+      <div class="composer-area">
+        <div id="attachmentList" class="attachment-list" aria-live="polite"></div>
+        <div class="composer-wrap">
+          <button id="attachButton" class="attach-button" title="Anexar ficheiros de texto" aria-label="Anexar ficheiros">＋</button>
+          <textarea id="messageInput" rows="1" placeholder="Escreve uma ordem para o DGM-MAT… (Enter envia, Shift+Enter nova linha)" aria-label="Mensagem"></textarea>
+          <button id="sendButton" class="send-button" aria-label="Enviar mensagem" title="Enviar">↑</button>
+        </div>
+        <div class="composer-hint">A interface só confirma o que o backend devolver; não declara tarefas concluídas por suposição.</div>
+      </div>
+    </main>
+    <aside class="motor-panel" aria-label="Estado dos motores DGM-MAT">
+      <div class="motor-heading"><strong>Motores</strong><button id="motorRefresh" class="motor-refresh" title="Atualizar estado">↻</button></div>
+      <p class="motor-legend"><span class="legend-dot green"></span> A funcionar <span class="legend-dot yellow"></span> Degradado <span class="legend-dot red"></span> Indisponível</p>
+      <div class="motor-list" id="motorList" aria-live="polite">
+        <div class="motor-row"><span class="led yellow"></span><span class="motor-info"><strong>API DGM-MAT</strong><small>A verificar…</small></span></div>
+      </div>
+      <div class="motor-actions">
+        <label class="command-label" for="commandSelect">Diagnóstico autorizado</label>
+        <select id="commandSelect" class="command-select" aria-label="Selecionar diagnóstico"><option value="engines.inventory">A carregar catálogo…</option></select>
+        <input id="commandTargetPath" class="command-target" type="text" autocomplete="off" spellcheck="false" hidden aria-label="Pasta Git alvo">
+        <button id="runCommandButton" class="motor-action">Executar diagnóstico</button>
+        <pre id="commandResult" class="command-result" aria-live="polite">Escolhe um diagnóstico do catálogo governado. A execução só começa quando carregares no botão.</pre>
+      </div>
+      <p class="motor-footnote">Diagnósticos governados e auditados. Inventário é apenas observacional: não inicia nem termina processos.</p>
+    </aside>
+  </div>
+  <input id="documentPicker" type="file" hidden multiple accept=".txt,.md,.markdown,.json,.jsonl,.csv,.tsv,.py,.js,.ts,.tsx,.jsx,.html,.css,.xml,.yaml,.yml,.toml,.ini,.cfg,.log,.ps1,.bat,.cmd,.sql,.sh,.rst,.diff,.patch">
+  <input id="bootstrapPicker" type="file" hidden accept=".token,.txt">
+  <dialog id="renameDialog">
+    <form method="dialog" class="dialog-form">
+      <h2>Renomear conversa</h2>
+      <input id="renameInput" maxlength="120" autocomplete="off" aria-label="Nome da conversa">
+      <div class="dialog-actions"><button class="secondary" value="cancel">Cancelar</button><button class="primary" id="saveRename" value="save">Guardar</button></div>
+    </form>
+  </dialog>
+  <dialog id="pairDialog">
+    <form method="dialog" class="dialog-form">
+      <h2>Ligar ao cérebro do DGM-MAT</h2>
+      <p>Seleciona o ficheiro local <code>bootstrap.token</code>. Normalmente fica em <code>%LOCALAPPDATA%\\DGM-MAT\\security\\bootstrap.token</code>. O conteúdo é usado apenas para pedir uma sessão temporária; não é guardado no browser.</p>
+      <p class="muted">Abre esta interface no PC através de <code>http://127.0.0.1:8181/app/</code> ou <code>http://localhost:8181/app/</code>.</p>
+      <div class="dialog-actions"><button class="secondary" value="cancel">Cancelar</button><button class="primary" id="chooseToken" value="choose">Selecionar ficheiro…</button></div>
+      <p id="pairError" class="error" role="alert"></p>
+    </form>
+  </dialog>
+  <script src="./app.js" defer></script>
+</body>
+</html>

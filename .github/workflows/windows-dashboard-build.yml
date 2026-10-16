@@ -1,0 +1,44 @@
+name: Windows Dashboard Package
+
+"on":
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dashboard-package:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout dashboard
+        uses: actions/checkout@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Validate source and contract
+        shell: pwsh
+        run: |
+          node --check app.js
+          node --test tests/cockpit-contract.test.cjs
+
+      - name: Package static dashboard and click-to-open shortcut
+        shell: pwsh
+        run: |
+          $package = Join-Path $PWD "release/DGM-MAT-Dashboard"
+          New-Item -ItemType Directory -Force -Path $package | Out-Null
+          Copy-Item "index.html", "app.js", "styles.css" $package -Force
+          @("[InternetShortcut]", "URL=http://127.0.0.1:8181/app/") | Set-Content -Path "$package/DGM-MAT Dashboard.url" -Encoding ascii
+          Copy-Item "packaging/windows/README-PT-PT.md" "$package/README-PT-PT.md" -Force
+          Set-Content -Path "$package/BUILD.txt" -Value @("Dashboard commit: $env:GITHUB_SHA", "Workflow run: $env:GITHUB_RUN_ID") -Encoding utf8
+          Compress-Archive -Path "$package/*" -DestinationPath "$PWD/DGM-MAT-Dashboard-Windows.zip" -Force
+
+      - name: Upload dashboard package
+        uses: actions/upload-artifact@v6
+        with:
+          name: DGM-MAT-Dashboard-Windows
+          path: DGM-MAT-Dashboard-Windows.zip
+          if-no-files-found: error
+          retention-days: 30

@@ -31,7 +31,7 @@ test("diagnostic execution uses the selected catalog ID and explicit POST action
 
 test("periodic health polling does not execute diagnostics", () => {
   const start = app.indexOf("async function probeMotors(forceCatalog)");
-  const end = app.indexOf("async function refresh()", start);
+  const end = app.indexOf("function newDraft()", start);
   assert.notEqual(start, -1);
   assert.notEqual(end, -1);
   const polling = app.slice(start, end);

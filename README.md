@@ -1,51 +1,52 @@
-# DGM-MAT Cockpit Frontend
+# DGM-MAT PC Chat Cockpit
 
-Frontend web/desktop independente para conversar com o runtime DGM-MAT. O cérebro e a fonte de verdade continuam no repositório AndreVazao/DGM-MAT.
+Interface provisória, simples e exclusiva para utilizar no PC local: enviar prompts, instruções e ficheiros de texto ao cérebro DGM-MAT e consultar as conversas guardadas pelo runtime.
 
-## Estado desta branch
+**Âmbito desta fase:** PC apenas. Não é o dashboard 3D definitivo, não é uma aplicação móvel e não substitui o DGM-MAT.
 
-- [x] Interface de chat contínuo em português europeu, sem frameworks nem dependências de build.
-- [x] Histórico, seleção, nova conversa e renomeação através das rotas reais /mobile/*.
-- [x] Pairing local com bootstrap.token e sessão temporária Bearer; o token bootstrap não é guardado.
-- [x] Anexos textuais lidos no browser e incluídos no conteúdo da mensagem.
-- [x] Layout responsivo e navegação lateral com scroll independente.
-- [x] Registo de auditoria e limitações em docs/AUDIT_AND_INTEGRATION.md.
-- [x] Verificação sintática JavaScript com resultado PASS.
-- [ ] Testes de runtime no PC real: ainda não executados.
-- [ ] Instalação/configuração no PC: ainda não executada.
+## O que inclui
+- Chat contínuo em português europeu.
+- Histórico persistente servido pelo DGM-MAT.
+- Criar e renomear conversas.
+- Colar prompts e anexar ficheiros de texto/código.
+- Ligação local autenticada com sessão temporária.
+- Interface sem frameworks, dependências de build ou serviços pagos.
 
-## Ativar no PC
+## Estado real
+- [x] Código da interface criado.
+- [x] Verificação sintática JavaScript concluída anteriormente com PASS.
+- [ ] Testes de integração no PC real ainda por executar.
+- [ ] Instalação/ativação local ainda por executar.
+- [ ] Capacidades de resposta e execução do DGM-MAT têm de ser validadas separadamente; a interface não transforma respostas de fallback em inteligência geral.
 
-1. Colocar o checkout em C:\\ProgramasGodMode\\DGM-Cockpit-Frontend.
-2. Configurar DGM_MOBILE_UI_PATH para essa pasta no processo/launcher DGM-MAT.
-3. Reiniciar o DGM-MAT.
-4. Abrir http://127.0.0.1:8181/app/ ou http://localhost:8181/app/.
-5. Quando solicitado, selecionar o ficheiro %LOCALAPPDATA%\\DGM-MAT\\security\\bootstrap.token para criar uma sessão temporária.
+## Ativação prevista no PC
+1. Colocar o checkout em `C:\\ProgramasGodMode\\DGM-Cockpit-Frontend`.
+2. Configurar `DGM_MOBILE_UI_PATH=C:\\ProgramasGodMode\\DGM-Cockpit-Frontend` no ambiente/launcher do DGM-MAT. O nome desta variável é legado; nesta fase serve apenas para indicar a pasta da interface PC.
+3. Reiniciar a API do DGM-MAT.
+4. Abrir `http://127.0.0.1:8181/app/`.
+5. Quando solicitado, selecionar `%LOCALAPPDATA%\\DGM-MAT\\security\\bootstrap.token` para obter uma sessão temporária.
 
-O serviço serve a UI a partir de /app quando DGM_MOBILE_UI_PATH aponta para uma pasta que contenha index.html. Sem essa configuração, o backend atual procura DGM-MAT-Mobile/web.
+A API serve a interface em `/app` quando a pasta configurada contém `index.html`. Sem configuração explícita, o backend atual procura a antiga pasta `DGM-MAT-Mobile/web`.
 
-## Conversas
+## Contrato utilizado
+O frontend reutiliza o contrato de conversas que já existe no backend DGM-MAT:
+- `GET /mobile/status`
+- `GET/POST /mobile/threads`
+- `GET /mobile/threads/{thread_id}`
+- `POST /mobile/threads/{thread_id}/messages`
+- `POST /mobile/threads/{thread_id}/rename`
+- `POST /auth/session`
 
-A UI usa o contrato implementado no backend:
-- GET /mobile/status
-- GET/POST /mobile/threads
-- GET /mobile/threads/{thread_id}
-- POST /mobile/threads/{thread_id}/messages
-- POST /mobile/threads/{thread_id}/rename
-- POST /auth/session
+Os caminhos `/mobile/*` são nomes históricos do backend; não significam que esta fase inclua suporte ou instalação móvel.
 
-As conversas são persistidas pelo DGM-MAT, por omissão em C:\\ProgramasGodMode\\DGM-MAT\\storage\\runtime\\sessions\\mobile_conversations.json.
-
-## Documentos
-
-Não foi encontrado endpoint de upload binário no backend atual. Nesta primeira versão, os ficheiros textuais suportados são lidos localmente no browser e incluídos na mensagem. Limites: 8 ficheiros por mensagem, 2 MiB por ficheiro e 5 MiB no total. PDF/DOCX e armazenamento documental independente ficam fora desta versão.
+## Anexos e limites
+Os ficheiros de texto/código suportados são lidos localmente no browser e incluídos no texto da mensagem. Máximo de 8 ficheiros, 2 MiB por ficheiro e 5 MiB no total. Não existe upload binário independente neste contrato; PDF e DOCX não são suportados nesta versão.
 
 ## Segurança e limitações
+- O token bootstrap não é embutido nem guardado no código; é selecionado localmente para pedir uma sessão temporária.
+- A sessão fica em `sessionStorage` e é invalidada quando a API responde 401.
+- A interface não contorna aprovações nem declara uma tarefa concluída sem confirmação do backend.
+- O runtime pode devolver respostas de fallback se o modelo local não estiver disponível ou se os recursos do PC forem insuficientes.
+- Nenhum teste end-to-end foi executado no PC nesta fase.
 
-- A sessão é guardada apenas em sessionStorage e é invalidada pelo frontend quando o backend devolve 401.
-- O bootstrap.token só é lido após o utilizador selecionar o ficheiro e só é enviado ao endpoint local de pairing.
-- A interface não contorna gates de aprovação.
-- A resposta do runtime pode ser uma resposta de fallback quando Ollama está indisponível ou a RAM livre é insuficiente; não se promete um LLM geral sempre disponível.
-- A ativação e os testes end-to-end no PC ainda estão pendentes.
-
-Ver também: docs/AUDIT_AND_INTEGRATION.md.
+O cérebro e a fonte de verdade continuam no repositório `AndreVazao/DGM-MAT`. O futuro estúdio 3D permanece fora do âmbito desta ferramenta provisória.

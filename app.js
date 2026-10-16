@@ -107,7 +107,9 @@
       const data=await readJson(await api("/governance/commands/catalog"));
       const commands=Array.isArray(data.commands)?data.commands:[];
       if(data.mode!=="read-only-allowlist"||data.arbitrary_shell!==false)throw new Error("Política inesperada; catálogo recusado");
+      if(!commands.length||commands.some(command=>!command||typeof command.id!=="string"||!/^[a-z][a-z0-9._-]{0,99}$/.test(command.id)||command.risk!=="READ"||typeof command.requires_target!=="boolean"))throw new Error("Catálogo vazio ou com esquema/permissões inválidos");
       state.availableCommands=commands;
+      const runButton=$("runCommandButton");if(runButton)runButton.disabled=false;
       const select=$("commandSelect");
       if(select){
         const previous=select.value;select.replaceChildren();
@@ -119,6 +121,9 @@
       const inventory=commands.find(c=>c.id==="engines.inventory");
       setMotor("inventory",inventory?"yellow":"red",inventory?"Disponível por pedido explícito":"Comando de inventário ausente no catálogo");
     }catch(error){
+      state.availableCommands=[];
+      const select=$("commandSelect");if(select){select.replaceChildren();const option=document.createElement("option");option.value="";option.textContent="Catálogo indisponível";select.append(option);}
+      const runButton=$("runCommandButton");if(runButton)runButton.disabled=true;
       setMotor("executor","red","Catálogo não acessível: "+error.message);
       setMotor("inventory","yellow","Inventário não executado");
     }

@@ -14,7 +14,10 @@ Interface provisória, simples e exclusiva para utilizar no PC local: enviar pro
 
 ## Estado real
 - [x] Código da interface criado.
-- [x] Verificação sintática JavaScript concluída anteriormente com PASS.
+- [x] Verificação sintática JavaScript concluída com PASS após o painel de motores.
+- [x] Painel lateral de motores com LEDs verde/amarelo/vermelho e sondas para API, conversas, Ollama e diagnóstico de autocorreção.
+- [x] Controlo web mostrado como indisponível/não confirmado até existir implementação real.
+- [ ] Validação visual e de integração no PC real ainda pendente.
 - [ ] Testes de integração no PC real ainda por executar.
 - [ ] Instalação/ativação local ainda por executar.
 - [ ] Capacidades de resposta e execução do DGM-MAT têm de ser validadas separadamente; a interface não transforma respostas de fallback em inteligência geral.

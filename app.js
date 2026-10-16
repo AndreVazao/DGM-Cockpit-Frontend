@@ -8,7 +8,7 @@
   const MAX_TOTAL_BYTES = 5 * 1024 * 1024;
   const MAX_FILES = 8;
   const ALLOWED_EXT = new Set(["txt","md","markdown","json","jsonl","csv","tsv","py","js","ts","tsx","jsx","html","css","xml","yaml","yml","toml","ini","cfg","log","ps1","bat","cmd","sql","sh","rst","diff","patch"]);
-  const state = { token: sessionStorage.getItem(SESSION_KEY) || "", threads: [], activeId: null, attachments: [], localDrafts: loadDrafts(), sending: false };
+  const state = { token: sessionStorage.getItem(SESSION_KEY) || "", threads: [], activeId: null, attachments: [], localDrafts: loadDrafts(), sending: false, availableCommands: [] };
   const $ = id => document.getElementById(id);
   const ui = {
     sidebar:$("sidebar"), list:$("threadList"), chat:$("chat"), messages:$("messages"), welcome:$("welcome"),
@@ -91,6 +91,13 @@
   let lastRepairProbe=0;
   let lastCommandCatalogProbe=0;
   function showCommandResult(text){const root=$("commandResult");if(root)root.textContent=String(text||"").slice(0,4000);}
+  function syncCommandTargetField(){
+    const select=$("commandSelect"),field=$("commandTargetPath");if(!select||!field)return;
+    const spec=state.availableCommands.find(c=>c.id===select.value);
+    field.hidden=!(spec&&spec.requires_target);
+    field.required=!!(spec&&spec.requires_target);
+    field.placeholder=field.required?"Pasta Git existente dentro das raízes autorizadas":"Sem pasta necessária para este comando";
+  }
   async function probeCommandCatalog(force){
     if(!state.token){setMotor("executor","red","Sessão autenticada necessária");return;}
     if(!force && Date.now()-lastCommandCatalogProbe<120000)return;
@@ -100,6 +107,14 @@
       const data=await readJson(await api("/governance/commands/catalog"));
       const commands=Array.isArray(data.commands)?data.commands:[];
       if(data.mode!=="read-only-allowlist"||data.arbitrary_shell!==false)throw new Error("Política inesperada; catálogo recusado");
+      state.availableCommands=commands;
+      const select=$("commandSelect");
+      if(select){
+        const previous=select.value;select.replaceChildren();
+        commands.forEach(command=>{const option=document.createElement("option");option.value=String(command.id||"");option.textContent=String(command.id||"comando")+" — "+String(command.description||"");select.append(option);});
+        select.value=commands.some(c=>c.id===previous)?previous:(commands.some(c=>c.id==="engines.inventory")?"engines.inventory":String(commands[0]?.id||""));
+        syncCommandTargetField();
+      }
       setMotor("executor","green",commands.length+" comandos autorizados · apenas leitura");
       const inventory=commands.find(c=>c.id==="engines.inventory");
       setMotor("inventory",inventory?"yellow":"red",inventory?"Disponível por pedido explícito":"Comando de inventário ausente no catálogo");
@@ -108,21 +123,35 @@
       setMotor("inventory","yellow","Inventário não executado");
     }
   }
-  async function runEngineInventory(){
-    const button=$("inventoryButton");if(button)button.disabled=true;
-    showCommandResult("A consultar o inventário de processos autorizado…");
-    setMotor("inventory","yellow","A executar engines.inventory…");
+  async function runSelectedCommand(){
+    const button=$("runCommandButton"),select=$("commandSelect"),target=$("commandTargetPath");
+    const commandId=select&&select.value;const spec=state.availableCommands.find(c=>c.id===commandId);
+    if(!spec){showCommandResult("Catálogo não carregado. Atualiza o estado e confirma a sessão de operador.");return;}
+    const targetPath=target?target.value.trim():"";
+    if(spec.requires_target&&!targetPath){showCommandResult("Este diagnóstico requer uma pasta Git existente dentro das raízes autorizadas.");syncCommandTargetField();if(target)target.focus();return;}
+    if(button)button.disabled=true;
+    showCommandResult("A executar o diagnóstico autorizado: "+commandId+"…");
+    if(commandId==="engines.inventory")setMotor("inventory","yellow","A executar engines.inventory…");
     try{
-      const data=await readJson(await api("/governance/commands/run",{method:"POST",body:JSON.stringify({command_id:"engines.inventory"})}));
+      const payload={command_id:commandId};if(spec.requires_target)payload.target_path=targetPath;
+      const data=await readJson(await api("/governance/commands/run",{method:"POST",body:JSON.stringify(payload)}));
       const status=String(data.status||"unknown");
-      setMotor("inventory",status==="passed"?"green":status==="unavailable"?"yellow":"red","Resultado real: "+status+" · "+String(data.duration_ms??"?")+" ms");
+      setMotor("executor",status==="passed"?"green":status==="unavailable"?"yellow":"red","Último diagnóstico: "+commandId+" · "+status+" · "+String(data.duration_ms??"?")+" ms");
+      if(commandId==="engines.inventory")setMotor("inventory",status==="passed"?"green":status==="unavailable"?"yellow":"red","Resultado real: "+status+" · "+String(data.duration_ms??"?")+" ms");
       let output=String(data.stdout||"").trim();
-      if(output){try{const parsed=JSON.parse(output);const list=Array.isArray(parsed)?parsed:[parsed];output=list.map(p=>String(p.Name||p.name||"processo")+" · PID "+String(p.ProcessId??p.processId??p.Id??"?")).join("\n");}catch(_){}}
-      if(!output)output=String(data.stderr||"Sem processos correspondentes ou sem saída.");
-      showCommandResult("Comando: engines.inventory\nEstado: "+status+"\nCódigo: "+String(data.returncode??"n/d")+"\n\n"+output);
+      if(commandId==="engines.inventory"&&output){
+        try{
+          const parsed=JSON.parse(output);
+          if(parsed===null)output="Nenhum processo correspondente encontrado.";
+          else{const list=Array.isArray(parsed)?parsed:[parsed];output=list.map(p=>String(p.Name||p.name||"processo")+" · PID "+String(p.ProcessId??p.processId??p.Id??"?")).join("\n");}
+        }catch(_){}
+      }
+      if(!output)output=String(data.stderr||"Sem saída.");
+      showCommandResult("Comando: "+commandId+"\nEstado: "+status+"\nCódigo: "+String(data.returncode??"n/d")+"\nDuração: "+String(data.duration_ms??"?")+" ms\n\n"+output);
     }catch(error){
-      setMotor("inventory","red","Inventário falhou: "+error.message);
-      showCommandResult("Não foi possível executar o inventário.\n"+error.message+"\n\nConfirma sessão de operador, backend e registo de auditoria.");
+      setMotor("executor","red","Diagnóstico falhou: "+error.message);
+      if(commandId==="engines.inventory")setMotor("inventory","red","Inventário falhou: "+error.message);
+      showCommandResult("Não foi possível concluir o diagnóstico.\n"+error.message+"\n\nConfirma sessão de operador, backend e registo de auditoria.");
     }finally{if(button)button.disabled=false;}
   }
   async function probeMotors(){
@@ -283,7 +312,8 @@
   });
   $("newChat").addEventListener("click",newDraft);
   $("motorRefresh").addEventListener("click",()=>{probeMotors();probeCommandCatalog(true);});
-  $("inventoryButton").addEventListener("click",runEngineInventory);
+  $("runCommandButton").addEventListener("click",runSelectedCommand);
+  $("commandSelect").addEventListener("change",syncCommandTargetField);
   $("refreshButton").addEventListener("click",refresh);
   $("pairButton").addEventListener("click",openPairDialog);
   $("chooseToken").addEventListener("click",function(event){event.preventDefault();ui.pairDialog.close();ui.bootstrapPicker.click();});

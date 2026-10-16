@@ -1,19 +1,18 @@
-<!-- DGM-MAT Cockpit Frontend | served under /app by the local DGM-MAT API -->
+<!-- DGM-MAT PC Chat Cockpit | served under /app by the local DGM-MAT API -->
 <!doctype html>
 <html lang="pt-PT">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0b1020">
-  <meta name="description" content="Cockpit conversacional local do DGM-MAT">
-  <link rel="manifest" href="./manifest.json">
+  <meta name="description" content="Chat local para dar instruções ao cérebro DGM-MAT no PC">
   <link rel="stylesheet" href="./styles.css">
-  <title>DGM-MAT · Cockpit</title>
+  <title>DGM-MAT · Chat PC</title>
 </head>
 <body>
   <div class="shell">
     <aside class="sidebar" id="sidebar">
-      <div class="brand"><div class="brand-mark">D</div><div><strong>DGM-MAT</strong><small>Engineering cockpit</small></div></div>
+      <div class="brand"><div class="brand-mark">D</div><div><strong>DGM-MAT</strong><small>Chat local · PC</small></div></div>
       <button class="new-chat" id="newChat"><span>＋</span> Nova conversa</button>
       <div class="connection"><span class="dot" id="statusDot"></span><span id="statusText">A verificar ligação…</span></div>
       <div class="sidebar-label">CONVERSAS</div>
@@ -21,12 +20,11 @@
       <div class="sidebar-bottom">
         <button class="quiet-button" id="refreshButton">↻ Sincronizar histórico</button>
         <button class="quiet-button" id="pairButton">♧ Ligar ao cérebro</button>
-        <div class="security-note">Local-first · sessão temporária</div>
+        <div class="security-note">PC local · sessão temporária</div>
       </div>
     </aside>
     <main class="workspace">
       <header class="topbar">
-        <button class="mobile-menu" id="menuButton" aria-label="Abrir conversas">☰</button>
         <div class="conversation-heading"><h1 id="conversationTitle">Nova conversa</h1><p id="contextLine">DGM-MAT · PC local</p></div>
         <button class="icon-button" id="renameButton" title="Renomear conversa" aria-label="Renomear conversa">✎</button>
       </header>
@@ -34,7 +32,7 @@
         <div class="welcome" id="welcome">
           <div class="welcome-mark">D</div>
           <h2>Vamos trabalhar.</h2>
-          <p>Escreve um pedido, cola um prompt ou anexa documentação textual. O DGM-MAT mantém o histórico no PC.</p>
+          <p>Cola um prompt, dá uma ordem ou anexa documentação textual. O DGM-MAT mantém o histórico no PC.</p>
           <div class="suggestions">
             <button data-prompt="Faz um diagnóstico do estado real do DGM-MAT e indica os bloqueios comprovados.">Diagnosticar o DGM-MAT</button>
             <button data-prompt="Audita o projeto atual com base no código e nos testes reais. Não alteres ficheiros antes de apresentar o plano.">Auditar um projeto</button>
@@ -47,10 +45,10 @@
         <div id="attachmentList" class="attachment-list" aria-live="polite"></div>
         <div class="composer-wrap">
           <button id="attachButton" class="attach-button" title="Anexar ficheiros de texto" aria-label="Anexar ficheiros">＋</button>
-          <textarea id="messageInput" rows="1" placeholder="Envia uma mensagem ao DGM-MAT… (Enter envia, Shift+Enter nova linha)" aria-label="Mensagem"></textarea>
+          <textarea id="messageInput" rows="1" placeholder="Escreve uma ordem para o DGM-MAT… (Enter envia, Shift+Enter nova linha)" aria-label="Mensagem"></textarea>
           <button id="sendButton" class="send-button" aria-label="Enviar mensagem" title="Enviar">↑</button>
         </div>
-        <div class="composer-hint">O DGM-MAT é a autoridade de execução. A interface não afirma que uma tarefa terminou sem resposta do backend.</div>
+        <div class="composer-hint">A interface só confirma o que o backend devolver; não declara tarefas concluídas por suposição.</div>
       </div>
     </main>
   </div>
@@ -66,8 +64,8 @@
   <dialog id="pairDialog">
     <form method="dialog" class="dialog-form">
       <h2>Ligar ao cérebro do DGM-MAT</h2>
-      <p>Seleciona o ficheiro local <code>bootstrap.token</code>. Normalmente fica em <code>%LOCALAPPDATA%\DGM-MAT\security\bootstrap.token</code>. O conteúdo é usado apenas para pedir uma sessão temporária; não é guardado no browser nem enviado para a cloud.</p>
-      <p class="muted">Esta operação só funciona quando o cockpit está aberto no PC através de <code>http://127.0.0.1:8181/app/</code> ou <code>http://localhost:8181/app/</code>.</p>
+      <p>Seleciona o ficheiro local <code>bootstrap.token</code>. Normalmente fica em <code>%LOCALAPPDATA%\\DGM-MAT\\security\\bootstrap.token</code>. O conteúdo é usado apenas para pedir uma sessão temporária; não é guardado no browser.</p>
+      <p class="muted">Abre esta interface no PC através de <code>http://127.0.0.1:8181/app/</code> ou <code>http://localhost:8181/app/</code>.</p>
       <div class="dialog-actions"><button class="secondary" value="cancel">Cancelar</button><button class="primary" id="chooseToken" value="choose">Selecionar ficheiro…</button></div>
       <p id="pairError" class="error" role="alert"></p>
     </form>

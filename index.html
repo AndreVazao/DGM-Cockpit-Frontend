@@ -51,6 +51,14 @@
         <div class="composer-hint">A interface só confirma o que o backend devolver; não declara tarefas concluídas por suposição.</div>
       </div>
     </main>
+    <aside class="motor-panel" aria-label="Estado dos motores DGM-MAT">
+      <div class="motor-heading"><strong>Motores</strong><button id="motorRefresh" class="motor-refresh" title="Atualizar estado">↻</button></div>
+      <p class="motor-legend"><span class="legend-dot green"></span> A funcionar <span class="legend-dot yellow"></span> Degradado <span class="legend-dot red"></span> Indisponível</p>
+      <div class="motor-list" id="motorList" aria-live="polite">
+        <div class="motor-row"><span class="led yellow"></span><span class="motor-info"><strong>API DGM-MAT</strong><small>A verificar…</small></span></div>
+      </div>
+      <p class="motor-footnote">Estado observado por sondas reais. Verde confirma resposta, não garante que todas as funções estejam perfeitas.</p>
+    </aside>
   </div>
   <input id="documentPicker" type="file" hidden multiple accept=".txt,.md,.markdown,.json,.jsonl,.csv,.tsv,.py,.js,.ts,.tsx,.jsx,.html,.css,.xml,.yaml,.yml,.toml,.ini,.cfg,.log,.ps1,.bat,.cmd,.sql,.sh,.rst,.diff,.patch">
   <input id="bootstrapPicker" type="file" hidden accept=".token,.txt">

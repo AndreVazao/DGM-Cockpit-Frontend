@@ -66,6 +66,58 @@
       return false;
     }
   }
+  const motorState = [
+    {id:"api",name:"API DGM-MAT",state:"yellow",detail:"A verificar…"},
+    {id:"chat",name:"Conversas / histórico",state:"yellow",detail:"À espera de sessão"},
+    {id:"ollama",name:"Motor de IA local",state:"yellow",detail:"A verificar…"},
+    {id:"repair",name:"Autocorreção",state:"yellow",detail:"A verificar endpoint"},
+    {id:"browser",name:"Controlo web",state:"red",detail:"Capacidade ainda não confirmada"}
+  ];
+  function renderMotors(){
+    const root=$("motorList"); if(!root)return;
+    root.replaceChildren();
+    motorState.forEach(m=>{
+      const row=document.createElement("div");row.className="motor-row";
+      const led=document.createElement("span");led.className="led "+m.state;
+      const info=document.createElement("span");info.className="motor-info";
+      const name=document.createElement("strong");name.textContent=m.name;
+      const detail=document.createElement("small");detail.textContent=m.detail;
+      info.append(name,detail);row.append(led,info);root.append(row);
+    });
+  }
+  function setMotor(id,state,detail){const m=motorState.find(x=>x.id===id);if(m){m.state=state;m.detail=detail;}renderMotors();}
+  async function probeMotors(){
+    setMotor("api","yellow","A testar /health…");
+    try{
+      const response=await fetch(API+"/health",{cache:"no-store"});
+      if(!response.ok)throw new Error("HTTP "+response.status);
+      const data=await response.json().catch(()=>({}));
+      setMotor("api","green","API respondeu · HTTP "+response.status);
+    }catch(error){setMotor("api","red","Sem resposta: "+error.message);}
+    if(!state.token){
+      setMotor("chat","red","Sessão não autenticada");
+      setMotor("ollama","yellow","Requer sessão para consultar o estado");
+      setMotor("repair","yellow","Requer sessão para consultar o estado");
+      setMotor("browser","red","Não foi encontrada capacidade de controlo web confirmada");
+      return;
+    }
+    try{
+      const data=await readJson(await api("/mobile/status"));
+      setMotor("chat","green","API de conversas respondeu");
+      if(data.ollama&&data.ollama.available)setMotor("ollama","green","Ollama reportado como disponível");
+      else setMotor("ollama","yellow","Não disponível ou não confirmado pelo runtime");
+    }catch(error){
+      setMotor("chat","red","Falha ao consultar conversas: "+error.message);
+      setMotor("ollama","yellow","Estado não confirmado");
+    }
+    try{
+      const data=await readJson(await api("/governance/audit/self"));
+      const actions=Array.isArray(data.actions)?data.actions:[];
+      const automatic=Array.isArray(data.automatic_actions)?data.automatic_actions.length:0;
+      setMotor("repair","yellow","Diagnóstico responde · "+automatic+" ação(ões) automática(s) planeada(s); capacidade limitada");
+    }catch(error){setMotor("repair","red","Endpoint de diagnóstico indisponível: "+error.message);}
+    setMotor("browser","red","Controlo de navegador não confirmado no backend");
+  }
   function openPairDialog(){ui.pairError.textContent="";if(!ui.pairDialog.open)ui.pairDialog.showModal();}
   function newDraft(){
     const t={id:"draft-"+(crypto.randomUUID?crypto.randomUUID():Date.now()+"-"+Math.random()),title:"Nova conversa",created_at:new Date().toISOString(),updated_at:new Date().toISOString(),messages:[],local:true};
@@ -184,6 +236,7 @@
     $("renameDialog").close();render();
   });
   $("newChat").addEventListener("click",newDraft);
+  $("motorRefresh").addEventListener("click",probeMotors);
   $("refreshButton").addEventListener("click",refresh);
   $("pairButton").addEventListener("click",openPairDialog);
   $("chooseToken").addEventListener("click",function(event){event.preventDefault();ui.pairDialog.close();ui.bootstrapPicker.click();});
@@ -197,7 +250,9 @@
   ui.input.addEventListener("input",()=>{ui.input.style.height="auto";ui.input.style.height=Math.min(ui.input.scrollHeight,180)+"px";});
   document.querySelectorAll("[data-prompt]").forEach(button=>button.addEventListener("click",()=>{ui.input.value=button.dataset.prompt;ui.input.focus();}));
   window.addEventListener("storage",event=>{if(event.key===SESSION_KEY){state.token=sessionStorage.getItem(SESSION_KEY)||"";}});
+  renderMotors();
   if(!["127.0.0.1","localhost"].includes(location.hostname)){
     setStatus(false,"Por segurança, abre no PC local: 127.0.0.1:8181/app/");
-  }else if(state.token){refresh();}else{setStatus(false,"Não ligado · sessão local necessária");openPairDialog();}
+  }else if(state.token){refresh();probeMotors();}else{setStatus(false,"Não ligado · sessão local necessária");openPairDialog();probeMotors();}
+  window.addEventListener("focus",probeMotors);
 })();

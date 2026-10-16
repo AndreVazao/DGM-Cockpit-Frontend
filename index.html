@@ -58,8 +58,11 @@
         <div class="motor-row"><span class="led yellow"></span><span class="motor-info"><strong>API DGM-MAT</strong><small>A verificar…</small></span></div>
       </div>
       <div class="motor-actions">
-        <button id="inventoryButton" class="motor-action">Consultar motores</button>
-        <pre id="commandResult" class="command-result" aria-live="polite">O inventário só é executado quando pedires. Os resultados são devolvidos pelo backend autenticado.</pre>
+        <label class="command-label" for="commandSelect">Diagnóstico autorizado</label>
+        <select id="commandSelect" class="command-select" aria-label="Selecionar diagnóstico"><option value="engines.inventory">A carregar catálogo…</option></select>
+        <input id="commandTargetPath" class="command-target" type="text" autocomplete="off" spellcheck="false" hidden aria-label="Pasta Git alvo">
+        <button id="runCommandButton" class="motor-action">Executar diagnóstico</button>
+        <pre id="commandResult" class="command-result" aria-live="polite">Escolhe um diagnóstico do catálogo governado. A execução só começa quando carregares no botão.</pre>
       </div>
       <p class="motor-footnote">Diagnósticos governados e auditados. Inventário é apenas observacional: não inicia nem termina processos.</p>
     </aside>

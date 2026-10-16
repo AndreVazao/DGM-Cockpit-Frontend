@@ -57,7 +57,11 @@
       <div class="motor-list" id="motorList" aria-live="polite">
         <div class="motor-row"><span class="led yellow"></span><span class="motor-info"><strong>API DGM-MAT</strong><small>A verificar…</small></span></div>
       </div>
-      <p class="motor-footnote">Estado observado por sondas reais. Verde confirma resposta, não garante que todas as funções estejam perfeitas.</p>
+      <div class="motor-actions">
+        <button id="inventoryButton" class="motor-action">Consultar motores</button>
+        <pre id="commandResult" class="command-result" aria-live="polite">O inventário só é executado quando pedires. Os resultados são devolvidos pelo backend autenticado.</pre>
+      </div>
+      <p class="motor-footnote">Diagnósticos governados e auditados. Inventário é apenas observacional: não inicia nem termina processos.</p>
     </aside>
   </div>
   <input id="documentPicker" type="file" hidden multiple accept=".txt,.md,.markdown,.json,.jsonl,.csv,.tsv,.py,.js,.ts,.tsx,.jsx,.html,.css,.xml,.yaml,.yml,.toml,.ini,.cfg,.log,.ps1,.bat,.cmd,.sql,.sh,.rst,.diff,.patch">

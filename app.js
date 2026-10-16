@@ -71,6 +71,8 @@
     {id:"chat",name:"Conversas / histórico",state:"yellow",detail:"À espera de sessão"},
     {id:"ollama",name:"Motor de IA local",state:"yellow",detail:"A verificar…"},
     {id:"repair",name:"Autocorreção",state:"yellow",detail:"A verificar endpoint"},
+    {id:"executor",name:"Executor governado",state:"yellow",detail:"A verificar catálogo autorizado"},
+    {id:"inventory",name:"Inventário de motores",state:"yellow",detail:"Ainda não consultado"},
     {id:"browser",name:"Controlo web",state:"red",detail:"Capacidade ainda não confirmada"}
   ];
   function renderMotors(){
@@ -87,6 +89,42 @@
   }
   function setMotor(id,state,detail){const m=motorState.find(x=>x.id===id);if(m){m.state=state;m.detail=detail;}renderMotors();}
   let lastRepairProbe=0;
+  let lastCommandCatalogProbe=0;
+  function showCommandResult(text){const root=$("commandResult");if(root)root.textContent=String(text||"").slice(0,4000);}
+  async function probeCommandCatalog(force){
+    if(!state.token){setMotor("executor","red","Sessão autenticada necessária");return;}
+    if(!force && Date.now()-lastCommandCatalogProbe<120000)return;
+    lastCommandCatalogProbe=Date.now();
+    setMotor("executor","yellow","A consultar catálogo de comandos…");
+    try{
+      const data=await readJson(await api("/governance/commands/catalog"));
+      const commands=Array.isArray(data.commands)?data.commands:[];
+      if(data.mode!=="read-only-allowlist"||data.arbitrary_shell!==false)throw new Error("Política inesperada; catálogo recusado");
+      setMotor("executor","green",commands.length+" comandos autorizados · apenas leitura");
+      const inventory=commands.find(c=>c.id==="engines.inventory");
+      setMotor("inventory",inventory?"yellow":"red",inventory?"Disponível por pedido explícito":"Comando de inventário ausente no catálogo");
+    }catch(error){
+      setMotor("executor","red","Catálogo não acessível: "+error.message);
+      setMotor("inventory","yellow","Inventário não executado");
+    }
+  }
+  async function runEngineInventory(){
+    const button=$("inventoryButton");if(button)button.disabled=true;
+    showCommandResult("A consultar o inventário de processos autorizado…");
+    setMotor("inventory","yellow","A executar engines.inventory…");
+    try{
+      const data=await readJson(await api("/governance/commands/run",{method:"POST",body:JSON.stringify({command_id:"engines.inventory"})}));
+      const status=String(data.status||"unknown");
+      setMotor("inventory",status==="passed"?"green":status==="unavailable"?"yellow":"red","Resultado real: "+status+" · "+String(data.duration_ms??"?")+" ms");
+      let output=String(data.stdout||"").trim();
+      if(output){try{const parsed=JSON.parse(output);const list=Array.isArray(parsed)?parsed:[parsed];output=list.map(p=>String(p.Name||p.name||"processo")+" · PID "+String(p.ProcessId??p.processId??p.Id??"?")).join("\n");}catch(_){}}
+      if(!output)output=String(data.stderr||"Sem processos correspondentes ou sem saída.");
+      showCommandResult("Comando: engines.inventory\nEstado: "+status+"\nCódigo: "+String(data.returncode??"n/d")+"\n\n"+output);
+    }catch(error){
+      setMotor("inventory","red","Inventário falhou: "+error.message);
+      showCommandResult("Não foi possível executar o inventário.\n"+error.message+"\n\nConfirma sessão de operador, backend e registo de auditoria.");
+    }finally{if(button)button.disabled=false;}
+  }
   async function probeMotors(){
     setMotor("api","yellow","A testar /health…");
     try{
@@ -101,9 +139,12 @@
       setMotor("chat","red","Sessão não autenticada");
       setMotor("ollama","yellow","Requer sessão para consultar o estado");
       setMotor("repair","yellow","Requer sessão para consultar o estado");
+      setMotor("executor","red","Sessão autenticada necessária");
+      setMotor("inventory","yellow","Ligar sessão para consultar motores");
       setMotor("browser","red","Não foi encontrada capacidade de controlo web confirmada");
       return;
     }
+    await probeCommandCatalog(false);
     try{
       const data=await readJson(await api("/mobile/status"));
       setMotor("chat","green","API de conversas respondeu");
@@ -241,7 +282,8 @@
     $("renameDialog").close();render();
   });
   $("newChat").addEventListener("click",newDraft);
-  $("motorRefresh").addEventListener("click",probeMotors);
+  $("motorRefresh").addEventListener("click",()=>{probeMotors();probeCommandCatalog(true);});
+  $("inventoryButton").addEventListener("click",runEngineInventory);
   $("refreshButton").addEventListener("click",refresh);
   $("pairButton").addEventListener("click",openPairDialog);
   $("chooseToken").addEventListener("click",function(event){event.preventDefault();ui.pairDialog.close();ui.bootstrapPicker.click();});
@@ -258,7 +300,7 @@
   renderMotors();
   if(!["127.0.0.1","localhost"].includes(location.hostname)){
     setStatus(false,"Por segurança, abre no PC local: 127.0.0.1:8181/app/");
-  }else if(state.token){refresh();probeMotors();}else{setStatus(false,"Não ligado · sessão local necessária");openPairDialog();probeMotors();}
+  }else if(state.token){refresh();probeMotors();probeCommandCatalog(true);}else{setStatus(false,"Não ligado · sessão local necessária");openPairDialog();probeMotors();}
   window.addEventListener("focus",probeMotors);
   window.setInterval(probeMotors,30000);
 })();

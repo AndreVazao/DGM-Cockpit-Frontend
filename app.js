@@ -154,7 +154,7 @@
       showCommandResult("Não foi possível concluir o diagnóstico.\n"+error.message+"\n\nConfirma sessão de operador, backend e registo de auditoria.");
     }finally{if(button)button.disabled=false;}
   }
-  async function probeMotors(){
+  async function probeMotors(forceCatalog){
     setMotor("api","yellow","A testar /health…");
     try{
       const response=await fetch(API+"/health",{cache:"no-store"});
@@ -173,7 +173,7 @@
       setMotor("browser","red","Não foi encontrada capacidade de controlo web confirmada");
       return;
     }
-    await probeCommandCatalog(false);
+    await probeCommandCatalog(!!forceCatalog);
     try{
       const data=await readJson(await api("/mobile/status"));
       setMotor("chat","green","API de conversas respondeu");
@@ -311,7 +311,7 @@
     $("renameDialog").close();render();
   });
   $("newChat").addEventListener("click",newDraft);
-  $("motorRefresh").addEventListener("click",()=>{probeMotors();probeCommandCatalog(true);});
+  $("motorRefresh").addEventListener("click",()=>probeMotors(true));
   $("runCommandButton").addEventListener("click",runSelectedCommand);
   $("commandSelect").addEventListener("change",syncCommandTargetField);
   $("refreshButton").addEventListener("click",refresh);
@@ -330,7 +330,7 @@
   renderMotors();
   if(!["127.0.0.1","localhost"].includes(location.hostname)){
     setStatus(false,"Por segurança, abre no PC local: 127.0.0.1:8181/app/");
-  }else if(state.token){refresh();probeMotors();probeCommandCatalog(true);}else{setStatus(false,"Não ligado · sessão local necessária");openPairDialog();probeMotors();}
+  }else if(state.token){refresh();probeMotors();}else{setStatus(false,"Não ligado · sessão local necessária");openPairDialog();probeMotors();}
   window.addEventListener("focus",probeMotors);
   window.setInterval(probeMotors,30000);
 })();

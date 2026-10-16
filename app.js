@@ -189,7 +189,6 @@
   $("chooseToken").addEventListener("click",function(event){event.preventDefault();ui.pairDialog.close();ui.bootstrapPicker.click();});
   ui.bootstrapPicker.addEventListener("change",async function(){const file=ui.bootstrapPicker.files&&ui.bootstrapPicker.files[0];await pairWithBootstrapFile(file);ui.bootstrapPicker.value="";});
   $("renameButton").addEventListener("click",renameActive);
-  $("menuButton").addEventListener("click",()=>ui.sidebar.classList.toggle("open"));
   ui.list.addEventListener("click",event=>{const button=event.target.closest("[data-id]");if(button)selectThread(button.dataset.id);});
   $("attachButton").addEventListener("click",()=>ui.picker.click());
   ui.picker.addEventListener("change",()=>pickDocuments(ui.picker.files));

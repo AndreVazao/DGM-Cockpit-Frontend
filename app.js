@@ -86,13 +86,16 @@
     });
   }
   function setMotor(id,state,detail){const m=motorState.find(x=>x.id===id);if(m){m.state=state;m.detail=detail;}renderMotors();}
+  let lastRepairProbe=0;
   async function probeMotors(){
     setMotor("api","yellow","A testar /health…");
     try{
       const response=await fetch(API+"/health",{cache:"no-store"});
       if(!response.ok)throw new Error("HTTP "+response.status);
       const data=await response.json().catch(()=>({}));
-      setMotor("api","green","API respondeu · HTTP "+response.status);
+      const health=String(data.status||data.state||"").toLowerCase();
+      if(["degraded","warning","unhealthy","error","partial"].includes(health))setMotor("api","yellow","API respondeu com estado "+health);
+      else setMotor("api","green","API respondeu · HTTP "+response.status);
     }catch(error){setMotor("api","red","Sem resposta: "+error.message);}
     if(!state.token){
       setMotor("chat","red","Sessão não autenticada");
@@ -110,12 +113,14 @@
       setMotor("chat","red","Falha ao consultar conversas: "+error.message);
       setMotor("ollama","yellow","Estado não confirmado");
     }
-    try{
-      const data=await readJson(await api("/governance/audit/self"));
-      const actions=Array.isArray(data.actions)?data.actions:[];
-      const automatic=Array.isArray(data.automatic_actions)?data.automatic_actions.length:0;
-      setMotor("repair","yellow","Diagnóstico responde · "+automatic+" ação(ões) automática(s) planeada(s); capacidade limitada");
-    }catch(error){setMotor("repair","red","Endpoint de diagnóstico indisponível: "+error.message);}
+    if(Date.now()-lastRepairProbe>120000){
+      lastRepairProbe=Date.now();
+      try{
+        const data=await readJson(await api("/governance/audit/self"));
+        const automatic=Array.isArray(data.automatic_actions)?data.automatic_actions.length:0;
+        setMotor("repair","yellow","Diagnóstico responde · "+automatic+" ação(ões) automática(s) planeada(s); capacidade limitada");
+      }catch(error){setMotor("repair","red","Endpoint de diagnóstico indisponível: "+error.message);}
+    }
     setMotor("browser","red","Controlo de navegador não confirmado no backend");
   }
   function openPairDialog(){ui.pairError.textContent="";if(!ui.pairDialog.open)ui.pairDialog.showModal();}
@@ -255,4 +260,5 @@
     setStatus(false,"Por segurança, abre no PC local: 127.0.0.1:8181/app/");
   }else if(state.token){refresh();probeMotors();}else{setStatus(false,"Não ligado · sessão local necessária");openPairDialog();probeMotors();}
   window.addEventListener("focus",probeMotors);
+  window.setInterval(probeMotors,30000);
 })();

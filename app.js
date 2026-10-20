@@ -140,6 +140,37 @@
       if(detail)detail.textContent=motor.detail||"Sem detalhe devolvido pelo runtime";
       if(led)led.className="room-led "+(motor.state||"unknown");
     });
+    renderRecentMissionActivity(missions);
+  }
+  function renderRecentMissionActivity(missions){
+    const list=$("officeMissionActivity"),empty=$("officeActivityEmpty");
+    if(!list||!empty)return;
+    list.replaceChildren();
+    const recent=missions&&Array.isArray(missions.recent)?missions.recent:[];
+    if(!recent.length){
+      empty.textContent=missions&&missions.total===0?"Ainda não existem checkpoints de missão para apresentar.":"Sem atividade de missão disponível na telemetria.";
+      empty.hidden=false;
+      return;
+    }
+    empty.hidden=true;
+    const labels={CREATED:"Criada",QUEUED:"Na fila",APPROVAL_PENDING:"Aguarda aprovação",RUNNING:"Em execução",WAITING_FOR_USER:"À espera do operador",COMPLETED:"Concluída",CANCELLED:"Cancelada",FAILED:"Falhou"};
+    recent.slice(0,8).forEach(mission=>{
+      const item=document.createElement("li");item.className="office-activity-item";
+      const top=document.createElement("div");top.className="office-activity-top";
+      const id=document.createElement("strong");id.textContent=String(mission.mission_id||"Missão sem ID");
+      const status=document.createElement("span");status.className="office-activity-status";status.textContent=labels[mission.status]||"Estado desconhecido";
+      top.append(id,status);
+      const meta=document.createElement("p");meta.className="office-activity-meta";
+      const details=[];
+      if(mission.handler)details.push("handler: "+String(mission.handler));
+      if(mission.action_id!==null&&mission.action_id!==undefined)details.push("ação #"+String(mission.action_id));
+      if(mission.updated_at){
+        const date=new Date(mission.updated_at);
+        details.push(Number.isNaN(date.getTime())?"data não validada":date.toLocaleString("pt-PT"));
+      }
+      meta.textContent=details.join(" · ")||"Sem detalhes adicionais na fonte";
+      item.append(top,meta);list.append(item);
+    });
   }
   async function probeOfficeTelemetry(){
     if(officeTelemetryLoading)return;

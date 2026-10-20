@@ -87,3 +87,13 @@ test("virtual office consumes authenticated live telemetry without exposing miss
   assert.match(html, /data-office-room="agents"/);
   assert.match(app, /No data source means unknown, never fabricated activity/);
 });
+
+
+test("isometric office blueprint is accessible and explicitly separated from live telemetry", () => {
+  assert.match(html, /class="office-blueprint"/);
+  assert.match(html, /id="blueprintSvgTitle"/);
+  assert.match(html, /id="blueprintSvgDesc"/);
+  assert.match(html, /Esquema estático · não representa atividade em direto/);
+  assert.match(html, /COORDENAÇÃO/);
+  assert.match(css, /Isometric office blueprint: deliberately static architecture/);
+});

@@ -2,6 +2,14 @@ name: Cockpit Contract Tests
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - "app.js"
+      - "index.html"
+      - "styles.css"
+      - "tests/**"
+      - ".github/workflows/cockpit-contract.yml"
 
 permissions:
   contents: read

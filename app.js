@@ -87,7 +87,39 @@
       info.append(name,detail);row.append(led,info);root.append(row);
     });
   }
-  function setMotor(id,state,detail){const m=motorState.find(x=>x.id===id);if(m){m.state=state;m.detail=detail;}renderMotors();}
+  function setMotor(id,state,detail){const m=motorState.find(x=>x.id===id);if(m){m.state=state;m.detail=detail;}renderMotors();renderOffice();}
+  const motorLabels={green:"Confirmado",yellow:"Parcial",red:"Indisponível"};
+  function renderOffice(){
+    const office=$("officeView");if(!office)return;
+    const connected=!!state.token && motorState.some(m=>m.id==="api"&&m.state==="green");
+    const truth=$("officeTruthText");
+    if(truth)truth.textContent=connected?"Ligação autenticada · estados consultados ao runtime":"Sem ligação autenticada confirmada";
+    office.querySelectorAll("[data-office-room]").forEach(room=>{
+      const id=room.dataset.officeRoom;
+      const stateLabel=room.querySelector("[data-office-state]");
+      const detail=room.querySelector("[data-office-detail]");
+      const led=room.querySelector(".room-led");
+      const motor=motorState.find(item=>item.id===id);
+      if(!motor)return; // Departments without a real endpoint remain explicitly unknown.
+      const label=motorLabels[motor.state]||"Sem leitura";
+      if(stateLabel){stateLabel.textContent=label;stateLabel.className="room-state state-"+(motor.state||"unknown");}
+      if(detail)detail.textContent=motor.detail||"Sem detalhe devolvido pelo runtime";
+      if(led)led.className="room-led "+(motor.state||"unknown");
+    });
+  }
+  function setView(view){
+    const office=view==="office";
+    $("chat").classList.toggle("hidden",office);
+    $("composerArea").classList.toggle("hidden",office);
+    $("officeView").classList.toggle("hidden",!office);
+    $("chatViewButton").classList.toggle("active",!office);
+    $("officeViewButton").classList.toggle("active",office);
+    $("chatViewButton").setAttribute("aria-pressed",String(!office));
+    $("officeViewButton").setAttribute("aria-pressed",String(office));
+    $("conversationTitle").textContent=office?"Escritório digital DGM-MAT":(active()&&active().title||"Nova conversa");
+    $("contextLine").textContent=office?"Vista observacional · atividade não confirmada sem eventos":"DGM-MAT · PC local";
+    if(office)renderOffice();
+  }
   let lastRepairProbe=0;
   let lastCommandCatalogProbe=0;
   function showCommandResult(text){const root=$("commandResult");if(root)root.textContent=String(text||"").slice(0,4000);}
@@ -315,6 +347,8 @@
     }
     $("renameDialog").close();render();
   });
+  $("chatViewButton").addEventListener("click",()=>setView("chat"));
+  $("officeViewButton").addEventListener("click",()=>setView("office"));
   $("newChat").addEventListener("click",newDraft);
   $("motorRefresh").addEventListener("click",()=>probeMotors(true));
   $("runCommandButton").addEventListener("click",runSelectedCommand);
@@ -333,6 +367,7 @@
   document.querySelectorAll("[data-prompt]").forEach(button=>button.addEventListener("click",()=>{ui.input.value=button.dataset.prompt;ui.input.focus();}));
   window.addEventListener("storage",event=>{if(event.key===SESSION_KEY){state.token=sessionStorage.getItem(SESSION_KEY)||"";}});
   renderMotors();
+  renderOffice();
   if(!["127.0.0.1","localhost"].includes(location.hostname)){
     setStatus(false,"Por segurança, abre no PC local: 127.0.0.1:8181/app/");
   }else if(state.token){refresh();probeMotors();}else{setStatus(false,"Não ligado · sessão local necessária");openPairDialog();probeMotors();}

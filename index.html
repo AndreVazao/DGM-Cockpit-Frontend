@@ -45,6 +45,12 @@
             <div class="ceo-caption"><strong>CEO · Cérebro DGM-MAT</strong><span>Coordenação central · sem contornar as permissões</span></div>
           </div>
         </div>
+        <div class="office-kpis" aria-label="Indicadores reais do runtime">
+          <div class="office-kpi"><span>Missões ativas</span><strong id="officeActiveMissions">—</strong></div>
+          <div class="office-kpi"><span>À espera de decisão</span><strong id="officeWaitingApprovals">—</strong></div>
+          <div class="office-kpi"><span>Ações em execução</span><strong id="officeRunningActions">—</strong></div>
+          <div class="office-kpi"><span>Worker da fila</span><strong id="officeWorkerStatus">Sem leitura</strong></div>
+        </div>
         <div class="office-section-heading"><div><span class="office-eyebrow">MAPA OPERACIONAL</span><h3>Departamentos e instalações</h3></div><span class="office-readonly">Projeção observacional</span></div>
         <div class="office-grid">
           <article class="office-room room-command" data-office-room="api">
@@ -53,7 +59,15 @@
           </article>
           <article class="office-room" data-office-room="executor">
             <div class="room-top"><span class="room-symbol">⚙</span><span class="room-state state-unknown" data-office-state>Sem leitura</span></div>
-            <h4>Engenharia &amp; execução</h4><p class="room-role">Executor governado · apenas capacidades confirmadas</p><div class="room-foot"><span class="room-led"></span><span data-office-detail>A aguardar telemetria</span></div>
+            <h4>Executor governado</h4><p class="room-role">Catálogo de capacidades permitidas</p><div class="room-foot"><span class="room-led"></span><span data-office-detail>A aguardar telemetria</span></div>
+          </article>
+          <article class="office-room" data-office-room="engineering">
+            <div class="room-top"><span class="room-symbol">▦</span><span class="room-state state-unknown" data-office-state>Sem telemetria</span></div>
+            <h4>Missões &amp; engenharia</h4><p class="room-role">Estado derivado dos checkpoints persistidos</p><div class="room-foot"><span class="room-led"></span><span data-office-detail>A aguardar telemetria</span></div>
+          </article>
+          <article class="office-room" data-office-room="operations">
+            <div class="room-top"><span class="room-symbol">⇄</span><span class="room-state state-unknown" data-office-state>Sem leitura</span></div>
+            <h4>Operações &amp; fila</h4><p class="room-role">Worker e ciclo de vida das ações</p><div class="room-foot"><span class="room-led"></span><span data-office-detail>A aguardar telemetria</span></div>
           </article>
           <article class="office-room" data-office-room="ollama">
             <div class="room-top"><span class="room-symbol">◈</span><span class="room-state state-unknown" data-office-state>Sem leitura</span></div>
@@ -71,12 +85,16 @@
             <div class="room-top"><span class="room-symbol">▤</span><span class="room-state state-unknown" data-office-state>Sem telemetria</span></div>
             <h4>Memória &amp; arquivo</h4><p class="room-role">Conhecimento persistente e proveniência</p><div class="room-foot"><span class="room-led"></span><span data-office-detail>O backend ainda não fornece eventos deste departamento</span></div>
           </article>
+          <article class="office-room room-unknown" data-office-room="agents">
+            <div class="room-top"><span class="room-symbol">♙</span><span class="room-state state-unknown" data-office-state>Sem telemetria</span></div>
+            <h4>Fábrica de agentes</h4><p class="room-role">Atividade individual e despacho</p><div class="room-foot"><span class="room-led"></span><span data-office-detail>O backend ainda não fornece eventos por agente</span></div>
+          </article>
           <article class="office-room room-unknown" data-office-room="approvals">
             <div class="room-top"><span class="room-symbol">◇</span><span class="room-state state-unknown" data-office-state>Sem telemetria</span></div>
             <h4>Aprovações &amp; segurança</h4><p class="room-role">Decisões humanas e execução autorizada</p><div class="room-foot"><span class="room-led"></span><span data-office-detail>O backend ainda não fornece eventos deste departamento</span></div>
           </article>
         </div>
-        <div class="office-notice"><strong>Sem animações falsas.</strong><span>Os estados de API, executor, motor local e diagnóstico vêm das verificações reais já disponíveis. Investigação, memória, aprovações e atividade individual dos agentes ficam explicitamente por confirmar até existir um feed de eventos próprio.</span></div>
+        <div class="office-notice"><strong>Estados com proveniência.</strong><span>Missões, decisões de fila e worker vêm da telemetria autenticada do backend. API, executor, motor local e diagnóstico usam as verificações existentes. Investigação, memória e atividade individual dos agentes permanecem desconhecidas até existir um feed próprio.</span></div>
       </section>
       <section class="chat" id="chat" aria-live="polite">
         <div class="welcome" id="welcome">

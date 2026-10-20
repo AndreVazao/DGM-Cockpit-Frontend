@@ -89,23 +89,73 @@
   }
   function setMotor(id,state,detail){const m=motorState.find(x=>x.id===id);if(m){m.state=state;m.detail=detail;}renderMotors();renderOffice();}
   const motorLabels={green:"Confirmado",yellow:"Parcial",red:"Indisponível"};
+  const officeStateLabels={active:"Ativo",waiting:"À espera",idle:"Em espera",unknown:"Sem telemetria",degraded:"Degradado"};
+  let officeTelemetry=null;
+  let officeTelemetryError="";
+  let officeTelemetryLoading=false;
+  function officeVisualState(state){
+    if(state==="active")return "green";
+    if(state==="waiting")return "yellow";
+    if(state==="degraded")return "red";
+    return "unknown";
+  }
   function renderOffice(){
     const office=$("officeView");if(!office)return;
-    const connected=!!state.token && motorState.some(m=>m.id==="api"&&m.state==="green");
     const truth=$("officeTruthText");
-    if(truth)truth.textContent=connected?"Ligação autenticada · estados consultados ao runtime":"Sem ligação autenticada confirmada";
+    if(truth){
+      if(!state.token)truth.textContent="Sessão local necessária para consultar o runtime";
+      else if(officeTelemetry)truth.textContent="Telemetria autenticada · "+officeTelemetry.missions.total+" missões observadas · "+(officeTelemetry.generated_at||"agora");
+      else if(officeTelemetryError)truth.textContent=officeTelemetryError;
+      else truth.textContent="Sessão autenticada · a consultar estados reais…";
+    }
+    const missions=officeTelemetry&&officeTelemetry.missions;
+    const actionCounts=officeTelemetry&&officeTelemetry.actions&&officeTelemetry.actions.counts||{};
+    const setKpi=(id,value)=>{const node=$(id);if(node)node.textContent=value==null?"—":String(value);};
+    setKpi("officeActiveMissions",missions&&missions.counts?missions.counts.RUNNING: null);
+    setKpi("officeWaitingApprovals",actionCounts.QUEUED==null?null:actionCounts.QUEUED);
+    setKpi("officeRunningActions",actionCounts.RUNNING==null?null:actionCounts.RUNNING);
+    const worker=officeTelemetry&&officeTelemetry.queue_worker;
+    setKpi("officeWorkerStatus",worker?(worker.worker_alive?"Confirmado":"Não confirmado"):"Sem leitura");
     office.querySelectorAll("[data-office-room]").forEach(room=>{
       const id=room.dataset.officeRoom;
       const stateLabel=room.querySelector("[data-office-state]");
       const detail=room.querySelector("[data-office-detail]");
       const led=room.querySelector(".room-led");
+      const department=officeTelemetry&&officeTelemetry.departments&&officeTelemetry.departments[id];
+      if(department){
+        const visual=officeVisualState(department.state);
+        if(stateLabel){stateLabel.textContent=officeStateLabels[department.state]||"Sem telemetria";stateLabel.className="room-state state-"+visual;}
+        let summary=department.reason||"Sem detalhe devolvido pelo runtime";
+        if(id==="engineering")summary=(department.active_missions||0)+" missão(ões) ativas · "+(department.waiting_missions||0)+" à espera";
+        else if(id==="approvals")summary=(department.waiting_decisions||0)+" decisões pendentes · "+(department.approved_actions||0)+" aprovadas · "+(department.running_actions||0)+" em execução";
+        else if(id==="operations")summary=department.worker_alive?"Worker da fila confirmado":"Worker da fila não confirmado";
+        if(detail)detail.textContent=summary;
+        if(led)led.className="room-led "+visual;
+        return;
+      }
       const motor=motorState.find(item=>item.id===id);
-      if(!motor)return; // Departments without a real endpoint remain explicitly unknown.
+      if(!motor)return; // No data source means unknown, never fabricated activity.
       const label=motorLabels[motor.state]||"Sem leitura";
       if(stateLabel){stateLabel.textContent=label;stateLabel.className="room-state state-"+(motor.state||"unknown");}
       if(detail)detail.textContent=motor.detail||"Sem detalhe devolvido pelo runtime";
       if(led)led.className="room-led "+(motor.state||"unknown");
     });
+  }
+  async function probeOfficeTelemetry(){
+    if(officeTelemetryLoading)return;
+    if(!state.token){
+      officeTelemetry=null;officeTelemetryError="Sessão local necessária para consultar o runtime";renderOffice();return;
+    }
+    officeTelemetryLoading=true;
+    try{
+      const payload=await readJson(await api("/runtime/office/telemetry"));
+      if(!payload||payload.schema!=="dgm-mat.office-telemetry.v1"||!payload.missions||!payload.missions.counts||!payload.actions||!payload.actions.counts||!payload.departments||!payload.queue_worker)throw new Error("Contrato de telemetria inválido");
+      officeTelemetry=payload;officeTelemetryError="";
+    }catch(_){
+      officeTelemetry=null;officeTelemetryError="Telemetria indisponível · confirma a ligação e a sessão local";
+    }finally{
+      officeTelemetryLoading=false;renderOffice();
+    }
   }
   function setView(view){
     const office=view==="office";
@@ -117,8 +167,8 @@
     $("chatViewButton").setAttribute("aria-pressed",String(!office));
     $("officeViewButton").setAttribute("aria-pressed",String(office));
     $("conversationTitle").textContent=office?"Escritório digital DGM-MAT":(active()&&active().title||"Nova conversa");
-    $("contextLine").textContent=office?"Vista observacional · atividade não confirmada sem eventos":"DGM-MAT · PC local";
-    if(office)renderOffice();
+    $("contextLine").textContent=office?"Vista observacional · telemetria autenticada":"DGM-MAT · PC local";
+    if(office){renderOffice();probeOfficeTelemetry();}
   }
   let lastRepairProbe=0;
   let lastCommandCatalogProbe=0;
@@ -372,5 +422,5 @@
     setStatus(false,"Por segurança, abre no PC local: 127.0.0.1:8181/app/");
   }else if(state.token){refresh();probeMotors();}else{setStatus(false,"Não ligado · sessão local necessária");openPairDialog();probeMotors();}
   window.addEventListener("focus",probeMotors);
-  window.setInterval(probeMotors,30000);
+  window.setInterval(()=>{probeMotors();if(!$("officeView").classList.contains("hidden"))probeOfficeTelemetry();},30000);
 })();

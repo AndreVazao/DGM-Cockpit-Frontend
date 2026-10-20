@@ -61,7 +61,7 @@ test("virtual office is a separate view and preserves the brain/UI authority bou
 
 test("office only projects observed motor state; unknown departments do not receive invented activity", () => {
   assert.match(app, /const motor=motorState\.find\(item=>item\.id===id\)/);
-  assert.match(app, /Sem telemetria/);
+  assert.match(html, /Sem telemetria/);
   assert.match(html, /Investigação/);
   assert.match(html, /Memória &amp; arquivo/);
   assert.match(html, /Aprovações &amp; segurança/);

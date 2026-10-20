@@ -26,8 +26,58 @@
     <main class="workspace">
       <header class="topbar">
         <div class="conversation-heading"><h1 id="conversationTitle">Nova conversa</h1><p id="contextLine">DGM-MAT · PC local</p></div>
+        <nav class="view-tabs" aria-label="Vistas do DGM-MAT">
+          <button class="view-tab active" id="chatViewButton" type="button" aria-pressed="true">Chat</button>
+          <button class="view-tab" id="officeViewButton" type="button" aria-pressed="false">Escritório digital</button>
+        </nav>
         <button class="icon-button" id="renameButton" title="Renomear conversa" aria-label="Renomear conversa">✎</button>
       </header>
+      <section class="office-view hidden" id="officeView" aria-labelledby="officeTitle">
+        <div class="office-hero">
+          <div class="office-hero-copy">
+            <span class="office-eyebrow">DGM-MAT · SEDE DIGITAL</span>
+            <h2 id="officeTitle">O cérebro coordena.<br>Os departamentos executam.</h2>
+            <p>Uma representação visual do sistema real. Estados sem telemetria são apresentados como desconhecidos — nunca como atividade inventada.</p>
+            <div class="office-truth"><span class="truth-pulse"></span><span id="officeTruthText">A aguardar ligação ao runtime</span></div>
+          </div>
+          <div class="ceo-card">
+            <div class="ceo-frame"><img src="https://raw.githubusercontent.com/AndreVazao/DGM-MAT/main/1792476724975.jpg" alt="Referência visual do CEO do escritório digital DGM-MAT" loading="lazy"></div>
+            <div class="ceo-caption"><strong>CEO · Cérebro DGM-MAT</strong><span>Coordenação central · sem contornar as permissões</span></div>
+          </div>
+        </div>
+        <div class="office-section-heading"><div><span class="office-eyebrow">MAPA OPERACIONAL</span><h3>Departamentos e instalações</h3></div><span class="office-readonly">Projeção observacional</span></div>
+        <div class="office-grid">
+          <article class="office-room room-command" data-office-room="api">
+            <div class="room-top"><span class="room-symbol">⌘</span><span class="room-state state-unknown" data-office-state>Sem leitura</span></div>
+            <h4>Direção &amp; cérebro</h4><p class="room-role">API e coordenação central</p><div class="room-foot"><span class="room-led"></span><span data-office-detail>A aguardar telemetria</span></div>
+          </article>
+          <article class="office-room" data-office-room="executor">
+            <div class="room-top"><span class="room-symbol">⚙</span><span class="room-state state-unknown" data-office-state>Sem leitura</span></div>
+            <h4>Engenharia &amp; execução</h4><p class="room-role">Executor governado · apenas capacidades confirmadas</p><div class="room-foot"><span class="room-led"></span><span data-office-detail>A aguardar telemetria</span></div>
+          </article>
+          <article class="office-room" data-office-room="ollama">
+            <div class="room-top"><span class="room-symbol">◈</span><span class="room-state state-unknown" data-office-state>Sem leitura</span></div>
+            <h4>Laboratório de IA</h4><p class="room-role">Motor local opcional</p><div class="room-foot"><span class="room-led"></span><span data-office-detail>A aguardar telemetria</span></div>
+          </article>
+          <article class="office-room" data-office-room="repair">
+            <div class="room-top"><span class="room-symbol">⟲</span><span class="room-state state-unknown" data-office-state>Sem leitura</span></div>
+            <h4>Diagnóstico &amp; reparação</h4><p class="room-role">Auditoria e planos de autocorreção</p><div class="room-foot"><span class="room-led"></span><span data-office-detail>A aguardar telemetria</span></div>
+          </article>
+          <article class="office-room room-unknown" data-office-room="research">
+            <div class="room-top"><span class="room-symbol">⌕</span><span class="room-state state-unknown" data-office-state>Sem telemetria</span></div>
+            <h4>Investigação</h4><p class="room-role">Pesquisa e descoberta de capacidades</p><div class="room-foot"><span class="room-led"></span><span data-office-detail>O backend ainda não fornece eventos deste departamento</span></div>
+          </article>
+          <article class="office-room room-unknown" data-office-room="memory">
+            <div class="room-top"><span class="room-symbol">▤</span><span class="room-state state-unknown" data-office-state>Sem telemetria</span></div>
+            <h4>Memória &amp; arquivo</h4><p class="room-role">Conhecimento persistente e proveniência</p><div class="room-foot"><span class="room-led"></span><span data-office-detail>O backend ainda não fornece eventos deste departamento</span></div>
+          </article>
+          <article class="office-room room-unknown" data-office-room="approvals">
+            <div class="room-top"><span class="room-symbol">◇</span><span class="room-state state-unknown" data-office-state>Sem telemetria</span></div>
+            <h4>Aprovações &amp; segurança</h4><p class="room-role">Decisões humanas e execução autorizada</p><div class="room-foot"><span class="room-led"></span><span data-office-detail>O backend ainda não fornece eventos deste departamento</span></div>
+          </article>
+        </div>
+        <div class="office-notice"><strong>Sem animações falsas.</strong><span>Os estados de API, executor, motor local e diagnóstico vêm das verificações reais já disponíveis. Investigação, memória, aprovações e atividade individual dos agentes ficam explicitamente por confirmar até existir um feed de eventos próprio.</span></div>
+      </section>
       <section class="chat" id="chat" aria-live="polite">
         <div class="welcome" id="welcome">
           <div class="welcome-mark">D</div>
@@ -41,7 +91,7 @@
         </div>
         <div id="messages"></div>
       </section>
-      <div class="composer-area">
+      <div class="composer-area" id="composerArea">
         <div id="attachmentList" class="attachment-list" aria-live="polite"></div>
         <div class="composer-wrap">
           <button id="attachButton" class="attach-button" title="Anexar ficheiros de texto" aria-label="Anexar ficheiros">＋</button>

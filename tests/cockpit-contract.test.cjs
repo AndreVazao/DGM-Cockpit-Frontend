@@ -46,3 +46,31 @@ test("command output is rendered as text, not interpreted HTML", () => {
   assert.match(html, /id="commandTargetPath"/);
   assert.match(html, /id="runCommandButton"/);
 });
+
+
+test("virtual office is a separate view and preserves the brain/UI authority boundary", () => {
+  assert.match(html, /id="officeView"/);
+  assert.match(html, /id="officeViewButton"/);
+  assert.match(html, /1792476724975\.jpg/);
+  assert.match(html, /Sem animações falsas/);
+  assert.match(html, /O backend ainda não fornece eventos deste departamento/);
+  assert.match(app, /function renderOffice\(\)/);
+  assert.match(app, /if\(!motor\)return; \/\/ Departments without a real endpoint remain explicitly unknown\./);
+  assert.match(app, /function setView\(view\)/);
+});
+
+test("office only projects observed motor state; unknown departments do not receive invented activity", () => {
+  assert.match(app, /const motor=motorState\.find\(item=>item\.id===id\)/);
+  assert.match(html, /Sem telemetria/);
+  assert.match(html, /Investigação/);
+  assert.match(html, /Memória &amp; arquivo/);
+  assert.match(html, /Aprovações &amp; segurança/);
+});
+
+
+test("chat and office navigation remains accessible and does not replace the core chat", () => {
+  assert.match(html, /id="chatViewButton" type="button" aria-pressed="true"/);
+  assert.match(html, /id="officeViewButton" type="button" aria-pressed="false"/);
+  assert.match(html, /id="composerArea"/);
+  assert.match(app, /\$\("composerArea"\)\.classList\.toggle\("hidden",office\)/);
+});

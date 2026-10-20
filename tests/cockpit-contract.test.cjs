@@ -74,3 +74,16 @@ test("chat and office navigation remains accessible and does not replace the cor
   assert.match(html, /id="composerArea"/);
   assert.match(app, /\$\("composerArea"\)\.classList\.toggle\("hidden",office\)/);
 });
+
+
+test("virtual office consumes authenticated live telemetry without exposing mission goals", () => {
+  assert.match(app, /api\("\/runtime\/office\/telemetry"\)/);
+  assert.match(app, /dgm-mat\.office-telemetry\.v1/);
+  assert.match(app, /officeTelemetry\.missions\.total/);
+  assert.match(html, /id="officeActiveMissions"/);
+  assert.match(html, /id="officeWaitingApprovals"/);
+  assert.match(html, /data-office-room="engineering"/);
+  assert.match(html, /data-office-room="operations"/);
+  assert.match(html, /data-office-room="agents"/);
+  assert.match(app, /No data source means unknown, never fabricated activity/);
+});

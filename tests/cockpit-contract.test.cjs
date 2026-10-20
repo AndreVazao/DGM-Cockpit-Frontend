@@ -6,6 +6,7 @@ const path = require("node:path");
 const root = path.resolve(__dirname, "..");
 const app = fs.readFileSync(path.join(root, "app.js"), "utf8");
 const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
+const css = fs.readFileSync(path.join(root, "styles.css"), "utf8");
 
 test("every literal DOM lookup in app.js has a matching HTML id", () => {
   const ids = [...app.matchAll(/\$\("([^"]+)"\)/g)].map(match => match[1]);

@@ -66,3 +66,11 @@ test("office only projects observed motor state; unknown departments do not rece
   assert.match(html, /Memória &amp; arquivo/);
   assert.match(html, /Aprovações &amp; segurança/);
 });
+
+
+test("chat and office navigation remains accessible and does not replace the core chat", () => {
+  assert.match(html, /id="chatViewButton" type="button" aria-pressed="true"/);
+  assert.match(html, /id="officeViewButton" type="button" aria-pressed="false"/);
+  assert.match(html, /id="composerArea"/);
+  assert.match(app, /\$\("composerArea"\)\.classList\.toggle\("hidden",office\)/);
+});

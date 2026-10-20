@@ -87,3 +87,15 @@ test("virtual office consumes authenticated live telemetry without exposing miss
   assert.match(html, /data-office-room="agents"/);
   assert.match(app, /No data source means unknown, never fabricated activity/);
 });
+
+
+test("virtual office renders a bounded recent mission feed from telemetry without mission goals", () => {
+  assert.match(html, /id="officeMissionActivity"/);
+  assert.match(html, /id="officeActivityEmpty"/);
+  assert.match(app, /function renderRecentMissionActivity\(missions\)/);
+  assert.match(app, /Array\.isArray\(missions\.recent\)/);
+  assert.match(app, /recent\.slice\(0,8\)/);
+  assert.match(app, /id\.textContent=String\(mission\.mission_id/);
+  assert.doesNotMatch(app.slice(app.indexOf("function renderRecentMissionActivity"), app.indexOf("async function probeOfficeTelemetry")), /mission\.goal/);
+  assert.match(css, /\.office-activity-list\{display:grid/);
+});

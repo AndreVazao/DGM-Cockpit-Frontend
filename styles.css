@@ -69,3 +69,15 @@
 .office-kpi strong{font-size:clamp(18px,2vw,25px);font-weight:750;letter-spacing:-.03em;color:#e3edff}
 @media(max-width:950px){.office-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){.office-kpis{gap:8px;margin-bottom:20px}.office-kpi{padding:12px}.office-kpi span{font-size:9px}.office-kpi strong{font-size:20px}}
+
+/* Recent mission activity uses only the bounded, content-minimized telemetry feed. */
+.office-activity{max-width:1280px;margin:22px auto 0}
+.office-activity .office-section-heading{margin-bottom:12px}
+.office-activity-empty{padding:16px;border:1px dashed #35445d;border-radius:12px;color:#9eafc2;font-size:11px}
+.office-activity-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:0;padding:0;list-style:none}
+.office-activity-item{min-width:0;padding:13px 15px;border:1px solid #293952;border-radius:12px;background:#101827}
+.office-activity-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.office-activity-top strong{font-size:11px;overflow-wrap:anywhere;color:#e0eaff}
+.office-activity-status{flex:0 0 auto;border:1px solid #3a4b63;border-radius:999px;padding:3px 7px;color:#b9c8df;font-size:9px}
+.office-activity-meta{margin:7px 0 0;color:#92a3be;font-size:10px;overflow-wrap:anywhere}
+@media(max-width:700px){.office-activity-list{grid-template-columns:1fr}.office-activity-top{align-items:flex-start;flex-direction:column;gap:5px}}

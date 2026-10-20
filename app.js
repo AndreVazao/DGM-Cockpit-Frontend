@@ -149,7 +149,7 @@
     officeTelemetryLoading=true;
     try{
       const payload=await readJson(await api("/runtime/office/telemetry"));
-      if(!payload||payload.schema!=="dgm-mat.office-telemetry.v1")throw new Error("Contrato de telemetria inválido");
+      if(!payload||payload.schema!=="dgm-mat.office-telemetry.v1"||!payload.missions||!payload.missions.counts||!payload.actions||!payload.actions.counts||!payload.departments||!payload.queue_worker)throw new Error("Contrato de telemetria inválido");
       officeTelemetry=payload;officeTelemetryError="";
     }catch(_){
       officeTelemetry=null;officeTelemetryError="Telemetria indisponível · confirma a ligação e a sessão local";

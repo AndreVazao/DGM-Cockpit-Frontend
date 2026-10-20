@@ -55,7 +55,7 @@ test("virtual office is a separate view and preserves the brain/UI authority bou
   assert.match(html, /Sem animações falsas/);
   assert.match(html, /O backend ainda não fornece eventos deste departamento/);
   assert.match(app, /function renderOffice\(\)/);
-  assert.match(app, /if\(!motor\)return; \/\/ Departments without a real endpoint remain explicitly unknown\./);
+  assert.match(app, /if\(!motor\)return; \/\/ No data source means unknown, never fabricated activity\./);
   assert.match(app, /function setView\(view\)/);
 });
 

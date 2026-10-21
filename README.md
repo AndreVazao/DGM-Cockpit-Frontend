@@ -16,3 +16,7 @@ Reasoning, task execution, agent lifecycle, permissions, memory, provider select
 
 ## Safety and validation
 Treat UI inputs as untrusted requests. The core revalidates every request and permission. Test stale/offline state, unknown events, authorization failures, accessibility and that UI failure does not stop core execution.
+
+## Runtime integration contract
+
+The current connection rules, telemetry schema, mission-state semantics, and virtual-office truth policy are documented in [docs/COCKPIT-RUNTIME-STATUS-CONTRACT-2026-10-21.md](docs/COCKPIT-RUNTIME-STATUS-CONTRACT-2026-10-21.md). The document distinguishes API/chat availability from actual mission-worker readiness and records what still requires local end-to-end verification.

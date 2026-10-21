@@ -55,7 +55,7 @@
       const localActive=state.localDrafts.find(t=>t.id===state.activeId);
       if(localActive && localActive.messages.length===0){ /* keep empty draft selected */ }
       else if(!state.activeId || !state.threads.some(t=>t.id===state.activeId)) state.activeId=state.threads[0]&&state.threads[0].id||null;
-      setStatus(true,"PC ligado · DGM-MAT pronto");
+      setStatus(true,"API e conversas disponíveis · execução por confirmar");
       ui.context.textContent="DGM-MAT · "+(status.ollama&&status.ollama.available?"Ollama disponível":"modo de resposta do runtime");
       render();
       return true;

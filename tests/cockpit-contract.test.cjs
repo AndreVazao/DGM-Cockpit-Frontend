@@ -98,3 +98,16 @@ test("isometric office blueprint is accessible and explicitly separated from liv
   assert.match(html, /COORDENAÇÃO/);
   assert.match(css, /Isometric office blueprint: deliberately static architecture/);
 });
+
+
+test("chat readiness does not claim mission execution is ready from conversation bridge alone", () => {
+  assert.match(app, /API e conversas disponíveis · execução por confirmar/);
+  assert.doesNotMatch(app, /PC ligado · DGM-MAT pronto/);
+});
+
+test("runtime office contract remains observational and preserves unknown departments", () => {
+  assert.match(app, /api\("\/runtime\/office\/telemetry"\)/);
+  assert.match(app, /dgm-mat\.office-telemetry\.v1/);
+  assert.match(app, /No data source means unknown, never fabricated activity/);
+  assert.match(html, /Esquema estático · não representa atividade em direto/);
+});

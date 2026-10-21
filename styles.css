@@ -80,3 +80,10 @@
 .blueprint-stage:before{content:"";position:absolute;inset:10% 8%;background:radial-gradient(ellipse,#4e8bd21c,transparent 65%);pointer-events:none}
 .blueprint-svg{display:block;position:relative;width:100%;height:auto;max-height:390px;filter:drop-shadow(0 14px 24px #0005)}
 @media(max-width:700px){.office-blueprint{padding:14px 10px 4px;margin-bottom:18px}.blueprint-heading{align-items:start;flex-direction:column}.blueprint-key{text-align:left}.blueprint-heading h3{font-size:17px}.blueprint-svg{min-width:540px;max-width:none;position:relative;left:50%;transform:translateX(-50%);width:145%}.blueprint-stage{overflow:hidden}}
+.office-activity-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:0;padding:0;list-style:none}
+.office-activity-item{min-width:0;padding:13px 15px;border:1px solid #293952;border-radius:12px;background:#101827}
+.office-activity-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.office-activity-top strong{font-size:11px;overflow-wrap:anywhere;color:#e0eaff}
+.office-activity-status{flex:0 0 auto;border:1px solid #3a4b63;border-radius:999px;padding:3px 7px;color:#b9c8df;font-size:9px}
+.office-activity-meta{margin:7px 0 0;color:#92a3be;font-size:10px;overflow-wrap:anywhere}
+@media(max-width:700px){.office-activity-list{grid-template-columns:1fr}.office-activity-top{align-items:flex-start;flex-direction:column;gap:5px}}

@@ -329,7 +329,35 @@
     const meta=document.createElement("div");meta.className="message-meta";
     const date=message.created_at?new Date(message.created_at):new Date();
     meta.textContent=(message.role==="user"?"Tu":"DGM-MAT")+" · "+date.toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit"})+(message.pending?" · por enviar":"");
-    bubble.append(content,meta);row.append(bubble);container.append(row);
+    bubble.append(content,meta);
+    const missionId=message.role==="assistant"&&message.metadata&&message.metadata.mission_id;
+    if(missionId){
+      const tracker=document.createElement("div");tracker.className="mission-tracker";
+      const status=document.createElement("p");status.className="mission-tracker-status";status.setAttribute("aria-live","polite");
+      status.textContent="Missão registada · execução por confirmar";
+      const check=document.createElement("button");check.type="button";check.className="mission-check-button";check.textContent="Consultar estado real";
+      check.addEventListener("click",async()=>{
+        check.disabled=true;status.textContent="A consultar telemetria persistida…";
+        try{
+          const payload=await readJson(await api("/runtime/office/telemetry"));
+          if(!payload||payload.schema!=="dgm-mat.office-telemetry.v1"||!payload.missions)throw new Error("Contrato de telemetria inválido");
+          const recent=Array.isArray(payload.missions.recent)?payload.missions.recent:[];
+          const observed=recent.find(item=>String(item.mission_id)===String(missionId));
+          if(!observed){
+            status.textContent="Estado desconhecido: esta missão não consta nas oito entradas recentes. A ausência não significa falha.";
+            return;
+          }
+          const labels={CREATED:"Criada",QUEUED:"Na fila",APPROVAL_PENDING:"Aguarda aprovação",RUNNING:"Em execução",WAITING_FOR_USER:"À espera do operador",COMPLETED:"Concluída",SUCCEEDED:"Concluída",CANCELLED:"Cancelada",FAILED:"Falhou",BLOCKED:"Bloqueada"};
+          const date=observed.updated_at?new Date(observed.updated_at):null;
+          const when=date&&!Number.isNaN(date.getTime())?" · "+date.toLocaleString("pt-PT"):"";
+          status.textContent="Estado observado: "+(labels[observed.status]||"Desconhecido")+" · ID "+String(missionId)+when+". A telemetria não expõe o resultado detalhado.";
+        }catch(error){
+          status.textContent="Não foi possível confirmar o estado: "+error.message+". A missão não foi declarada concluída.";
+        }finally{check.disabled=false;}
+      });
+      tracker.append(status,check);bubble.append(tracker);
+    }
+    row.append(bubble);container.append(row);
   }
   function render(){
     const t=active();

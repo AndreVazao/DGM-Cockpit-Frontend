@@ -145,3 +145,13 @@ test("virtual office exposes the complete logical floor directory with evidence-
   assert.ok(app.includes("não implica execução de missão confirmada."));
   assert.ok(css.includes(".office-floor-grid{display:grid"));
 });
+
+
+test("logical floor directory navigates to matching operational rooms", () => {
+  assert.ok(app.includes('event.target.closest("[data-floor-target]")'));
+  assert.ok(app.includes('room.scrollIntoView({behavior:"auto",block:"center"})'));
+  for (const target of ["api","engineering","research","memory","approvals","agents","operations"]) {
+    assert.ok(html.includes('data-floor-target="'+target+'"'), "missing floor navigation target "+target);
+  }
+  assert.ok(css.includes(".floor-open:focus-visible"));
+});

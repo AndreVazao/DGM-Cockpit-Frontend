@@ -87,3 +87,10 @@
 .office-activity-status{flex:0 0 auto;border:1px solid #3a4b63;border-radius:999px;padding:3px 7px;color:#b9c8df;font-size:9px}
 .office-activity-meta{margin:7px 0 0;color:#92a3be;font-size:10px;overflow-wrap:anywhere}
 @media(max-width:700px){.office-activity-list{grid-template-columns:1fr}.office-activity-top{align-items:flex-start;flex-direction:column;gap:5px}}
+
+/* Mission tracking: a conversation response is not a mission result. */
+.mission-tracker{display:grid;gap:8px;margin-top:12px;padding:10px 12px;border:1px solid #385170;border-radius:12px;background:#101b2c}
+.mission-tracker-status{margin:0;color:#b9cbe4;font-size:11px;line-height:1.55;overflow-wrap:anywhere}
+.mission-check-button{justify-self:start;padding:7px 10px;border:1px solid #4c6f98;border-radius:8px;background:#1a2b43;color:#dbeaff;font:inherit;font-size:11px;cursor:pointer}
+.mission-check-button:hover{background:#243d5c}
+.mission-check-button:disabled{opacity:.6;cursor:wait}

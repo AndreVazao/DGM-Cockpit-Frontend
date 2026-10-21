@@ -337,22 +337,32 @@
       status.textContent="Missão registada · execução por confirmar";
       const check=document.createElement("button");check.type="button";check.className="mission-check-button";check.textContent="Consultar estado real";
       check.addEventListener("click",async()=>{
-        check.disabled=true;status.textContent="A consultar telemetria persistida…";
+        check.disabled=true;status.textContent="A consultar o checkpoint persistido…";
         try{
-          const payload=await readJson(await api("/runtime/office/telemetry"));
-          if(!payload||payload.schema!=="dgm-mat.office-telemetry.v1"||!payload.missions)throw new Error("Contrato de telemetria inválido");
-          const recent=Array.isArray(payload.missions.recent)?payload.missions.recent:[];
-          const observed=recent.find(item=>String(item.mission_id)===String(missionId));
-          if(!observed){
-            status.textContent="Estado desconhecido: esta missão não consta nas oito entradas recentes. A ausência não significa falha.";
-            return;
+          const payload=await readJson(await api("/runtime/missions/"+encodeURIComponent(String(missionId))));
+          if(!payload||String(payload.mission_id)!==String(missionId)||typeof payload.status!=="string")throw new Error("Resposta de detalhe de missão inválida");
+          const labels={CREATED:"Criada",QUEUED:"Na fila",APPROVAL_PENDING:"Aguarda aprovação",RUNNING:"Em execução",WAITING_FOR_USER:"À espera do operador",COMPLETED:"Concluída",SUCCEEDED:"Concluída",CANCELLED:"Cancelada",FAILED:"Falhou"};
+          const parts=["Estado persistido: "+(labels[payload.status]||"Desconhecido"),"ID "+String(missionId)];
+          if(typeof payload.progress==="number")parts.push("progresso reportado "+Math.round(Math.max(0,Math.min(1,payload.progress))*100)+"%");
+          if(payload.updated_at){
+            const date=new Date(payload.updated_at);
+            parts.push(Number.isNaN(date.getTime())?"data não validada":date.toLocaleString("pt-PT"));
           }
-          const labels={CREATED:"Criada",QUEUED:"Na fila",APPROVAL_PENDING:"Aguarda aprovação",RUNNING:"Em execução",WAITING_FOR_USER:"À espera do operador",COMPLETED:"Concluída",SUCCEEDED:"Concluída",CANCELLED:"Cancelada",FAILED:"Falhou",BLOCKED:"Bloqueada"};
-          const date=observed.updated_at?new Date(observed.updated_at):null;
-          const when=date&&!Number.isNaN(date.getTime())?" · "+date.toLocaleString("pt-PT"):"";
-          status.textContent="Estado observado: "+(labels[observed.status]||"Desconhecido")+" · ID "+String(missionId)+when+". A telemetria não expõe o resultado detalhado.";
+          if(payload.handler)parts.push("handler "+String(payload.handler).slice(0,120));
+          const resultValue=payload.result;
+          if(resultValue!==null&&resultValue!==undefined){
+            const resultText=typeof resultValue==="string"?resultValue:JSON.stringify(resultValue);
+            parts.push("resultado: "+String(resultText).slice(0,700));
+          }
+          if(payload.output!==null&&payload.output!==undefined){
+            const outputText=typeof payload.output==="string"?payload.output:JSON.stringify(payload.output);
+            parts.push("saída: "+String(outputText).slice(0,700));
+          }
+          if(payload.result_truncated||payload.output_truncated)parts.push("conteúdo longo limitado pela API");
+          if(payload.error)parts.push("erro registado: "+String(payload.error).slice(0,300));
+          status.textContent=parts.join(" · ");
         }catch(error){
-          status.textContent="Não foi possível confirmar o estado: "+error.message+". A missão não foi declarada concluída.";
+          status.textContent="Estado/resultado não confirmado: "+error.message+". O cockpit não assume sucesso nem falha sem checkpoint válido.";
         }finally{check.disabled=false;}
       });
       tracker.append(status,check);bubble.append(tracker);

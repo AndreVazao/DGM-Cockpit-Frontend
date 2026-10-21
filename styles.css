@@ -109,3 +109,7 @@
 .office-floor p{margin:9px 0 0;color:#91a4c1;font-size:10px;line-height:1.55;overflow-wrap:anywhere}
 @media(max-width:950px){.office-floor-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){.office-floor-grid{grid-template-columns:1fr}.floor-top{align-items:flex-start;flex-direction:column;gap:7px}}
+
+.floor-open{margin-top:10px;padding:6px 8px;border:1px solid #3b5576;border-radius:8px;background:#14243a;color:#c8dcf8;font:inherit;font-size:10px;cursor:pointer}
+.floor-open:hover{background:#203957}
+.floor-open:focus-visible{outline:2px solid #8fc0ff;outline-offset:2px}

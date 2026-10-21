@@ -508,6 +508,15 @@
   });
   $("chatViewButton").addEventListener("click",()=>setView("chat"));
   $("officeViewButton").addEventListener("click",()=>setView("office"));
+  $("officeFloorDirectory").addEventListener("click",function(event){
+    const button=event.target.closest("[data-floor-target]");if(!button)return;
+    const target=button.dataset.floorTarget;
+    const room=document.querySelector('[data-office-room="'+target+'"]');
+    if(!room)return;
+    room.scrollIntoView({behavior:"auto",block:"center"});
+    room.setAttribute("tabindex","-1");
+    room.focus({preventScroll:true});
+  });
   $("newChat").addEventListener("click",newDraft);
   $("motorRefresh").addEventListener("click",()=>probeMotors(true));
   $("runCommandButton").addEventListener("click",runSelectedCommand);

@@ -99,6 +99,45 @@
     if(state==="degraded")return "red";
     return "unknown";
   }
+  const officeFloorMap = [
+    {id:"front-office",title:"Piso 0 · Receção e ligação ao proprietário",department:null,detail:"Sem feed específico de receção / Chief of Staff."},
+    {id:"central",title:"Piso 1 · Direção central",department:null,detail:"Estado do runtime; não prova por si só que o worker esteja ativo."},
+    {id:"engineering",title:"Piso 2 · Engenharia e QA",department:"engineering"},
+    {id:"research",title:"Piso 3 · Investigação e laboratórios",department:"research"},
+    {id:"memory",title:"Piso 4 · Memória e conhecimento",department:"memory"},
+    {id:"governance",title:"Piso 5 · Aprovações e governação",department:"approvals"},
+    {id:"design",title:"Piso 6 · Design, produto e UI/UX",department:null,detail:"Sem feed específico de design / produto."},
+    {id:"agents",title:"Piso 7 · RH e catálogo de agentes",department:"agents"},
+    {id:"operations",title:"Piso 8 · Operações, armazém e expedição",department:"operations"}
+  ];
+  function renderOfficeFloors(telemetry){
+    const root=$("officeFloorDirectory");if(!root)return;
+    root.querySelectorAll("[data-office-floor]").forEach(card=>{
+      const spec=officeFloorMap.find(item=>item.id===card.dataset.officeFloor);
+      if(!spec)return;
+      const badge=card.querySelector("[data-floor-state]");
+      const detail=card.querySelector("[data-floor-detail]");
+      let status="unknown",summary=spec.detail||"Sem fonte de estado específica.";
+      if(telemetry&&spec.id==="central"&&telemetry.runtime){
+        const runtime=telemetry.runtime;
+        const raw=String(runtime.status||"unknown");
+        if(runtime.is_degraded===true||raw.toLowerCase()==="degraded")status="degraded";
+        else if(["running","healthy","ready"].includes(raw.toLowerCase()))status="active";
+        summary="Runtime observado: "+raw+" · não implica execução de missão confirmada.";
+      }else if(telemetry&&spec.department){
+        const department=telemetry.departments&&telemetry.departments[spec.department];
+        if(department){
+          status=officeVisualState(department.state)==="green"?"active":officeVisualState(department.state)==="yellow"?"waiting":officeVisualState(department.state)==="red"?"degraded":"unknown";
+          summary=department.reason||"Sem detalhe devolvido pelo runtime.";
+          if(spec.department==="engineering")summary=(department.active_missions||0)+" missão(ões) ativas · "+(department.waiting_missions||0)+" à espera.";
+          else if(spec.department==="approvals")summary=(department.waiting_decisions||0)+" decisões pendentes · "+(department.approved_actions||0)+" aprovadas · "+(department.running_actions||0)+" em execução.";
+          else if(spec.department==="operations")summary=department.worker_alive===true?"Heartbeat do worker confirmado.":"Heartbeat do worker não confirmado.";
+        }
+      }
+      if(badge){badge.textContent=officeStateLabels[status]||"Sem telemetria";badge.className="floor-state state-"+officeVisualState(status);}
+      if(detail)detail.textContent=summary;
+    });
+  }
   function renderOffice(){
     const office=$("officeView");if(!office)return;
     const truth=$("officeTruthText");
@@ -108,6 +147,7 @@
       else if(officeTelemetryError)truth.textContent=officeTelemetryError;
       else truth.textContent="Sessão autenticada · a consultar estados reais…";
     }
+    renderOfficeFloors(officeTelemetry);
     const missions=officeTelemetry&&officeTelemetry.missions;
     const actionCounts=officeTelemetry&&officeTelemetry.actions&&officeTelemetry.actions.counts||{};
     const setKpi=(id,value)=>{const node=$(id);if(node)node.textContent=value==null?"—":String(value);};

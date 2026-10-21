@@ -133,3 +133,15 @@ test("assistant mission messages read exact persisted mission state and result",
   assert.ok(html.includes("1792476724975.jpg"));
   assert.ok(css.includes(".mission-tracker{"));
 });
+
+
+test("virtual office exposes the complete logical floor directory with evidence-based states", () => {
+  assert.ok(html.includes('id="officeFloorDirectory"'));
+  for (const floor of ["front-office","central","engineering","research","memory","governance","design","agents","operations"]) {
+    assert.ok(html.includes('data-office-floor="'+floor+'"'), "missing logical floor "+floor);
+  }
+  assert.ok(app.includes("function renderOfficeFloors(telemetry)"));
+  assert.ok(app.includes("Sem fonte de estado específica."));
+  assert.ok(app.includes("não implica execução de missão confirmada."));
+  assert.ok(css.includes(".office-floor-grid{display:grid"));
+});

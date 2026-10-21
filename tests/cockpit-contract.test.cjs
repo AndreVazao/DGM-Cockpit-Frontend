@@ -124,12 +124,12 @@ test("virtual office renders a bounded recent mission feed from telemetry withou
 });
 
 
-test("assistant mission messages expose an explicit, evidence-based status check", () => {
-  assert.match(app, /message\.metadata&&message\.metadata\.mission_id/);
-  assert.match(app, /api\("\/runtime\/office\/telemetry"\)/);
-  assert.match(app, /Estado desconhecido: esta missão não consta nas oito entradas recentes/);
-  assert.match(app, /A telemetria não expõe o resultado detalhado/);
-  assert.match(html, /avatar careca semelhante será produzido como recurso separado/);
-  assert.match(html, /1792476724975\.jpg/);
-  assert.match(css, /\.mission-tracker\{/);
+test("assistant mission messages read exact persisted mission state and result", () => {
+  assert.ok(app.includes("message.metadata&&message.metadata.mission_id"));
+  assert.ok(app.includes('api("/runtime/missions/"+encodeURIComponent(String(missionId)))'));
+  assert.ok(app.includes("Estado/resultado não confirmado"));
+  assert.ok(app.includes("payload.result_truncated||payload.output_truncated"));
+  assert.ok(html.includes("avatar careca semelhante será produzido como recurso separado"));
+  assert.ok(html.includes("1792476724975.jpg"));
+  assert.ok(css.includes(".mission-tracker{"));
 });

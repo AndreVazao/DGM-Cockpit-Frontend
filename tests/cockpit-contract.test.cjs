@@ -163,7 +163,7 @@ test("virtual office renders the declared role catalog separately from live tele
   assert.match(html, /id="officeDeclaredAgents"/);
   assert.match(app, /function renderOfficeRoster\(telemetry\)/);
   assert.match(app, /const organization=telemetry&&telemetry\.organization/);
-  assert.match(app, /Papéis declarados ≠ trabalhadores ativos/);
+  assert.match(html, /Papéis declarados ≠ trabalhadores ativos/);
   assert.match(app, /Sem telemetria/);
   assert.doesNotMatch(app.slice(app.indexOf("function renderOfficeRoster"), app.indexOf("function renderOffice()")), /innerHTML/);
 });

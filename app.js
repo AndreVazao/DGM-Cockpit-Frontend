@@ -138,6 +138,38 @@
       if(detail)detail.textContent=summary;
     });
   }
+  function renderOfficeRoster(telemetry){
+    const summary=$("officeRosterSummary"),departmentsRoot=$("officeDeclaredDepartments"),agentsRoot=$("officeDeclaredAgents"),policy=$("officeRosterPolicy");
+    if(!summary||!departmentsRoot||!agentsRoot||!policy)return;
+    departmentsRoot.replaceChildren();agentsRoot.replaceChildren();
+    const organization=telemetry&&telemetry.organization;
+    if(!organization||!Array.isArray(organization.departments)||!Array.isArray(organization.agents)){
+      summary.textContent="Catálogo organizacional ainda não disponível nesta versão do backend";
+      policy.textContent="A vista operacional continua disponível. Os papéis não serão inferidos a partir de nomes ou estados genéricos.";
+      return;
+    }
+    summary.textContent=organization.departments.length+" departamentos · "+organization.agents.length+" agentes definidos";
+    policy.textContent=String(organization.activity_policy||"Papéis declarados não comprovam atividade real.");
+    const stateLabels={active:"Ativo",waiting:"À espera",idle:"Em espera",unknown:"Sem telemetria",degraded:"Degradado",offline:"Offline"};
+    function makeCard(className,title,description,details,status){
+      const card=document.createElement("article");card.className=className;
+      const heading=document.createElement("strong");heading.textContent=String(title||"Sem nome");card.append(heading);
+      const body=document.createElement("p");body.textContent=String(description||"Sem descrição declarada.");card.append(body);
+      (details||[]).forEach(value=>{const line=document.createElement("small");line.textContent=String(value);card.append(line);});
+      const badge=document.createElement("span");badge.className="office-roster-state";badge.textContent=stateLabels[status]||"Sem telemetria";card.append(badge);
+      return card;
+    }
+    organization.departments.forEach(department=>{
+      const capabilities=Array.isArray(department.capabilities)?department.capabilities.join(" · "):"Capacidades não declaradas";
+      departmentsRoot.append(makeCard("office-roster-card",department.name,department.mission,["Capacidades: "+(capabilities||"não declaradas")],department.activity_state));
+    });
+    organization.agents.forEach(agent=>{
+      agentsRoot.append(makeCard("office-roster-card",agent.name,String(agent.role||"Papel não declarado")+" · "+String(agent.department_id||"sem departamento"),[
+        "Maturidade: "+String(agent.execution_maturity||"ROLE_DEFINED_ONLY"),
+        String(agent.activation_blocker||"Ativação não verificada")
+      ],agent.activity_state));
+    });
+  }
   function renderOffice(){
     const office=$("officeView");if(!office)return;
     const truth=$("officeTruthText");
@@ -148,6 +180,7 @@
       else truth.textContent="Sessão autenticada · a consultar estados reais…";
     }
     renderOfficeFloors(officeTelemetry);
+    renderOfficeRoster(officeTelemetry);
     const missions=officeTelemetry&&officeTelemetry.missions;
     const actionCounts=officeTelemetry&&officeTelemetry.actions&&officeTelemetry.actions.counts||{};
     const setKpi=(id,value)=>{const node=$(id);if(node)node.textContent=value==null?"—":String(value);};

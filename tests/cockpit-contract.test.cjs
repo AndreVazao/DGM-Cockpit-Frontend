@@ -175,6 +175,12 @@ test("minimal dashboard exposes a user-triggered end-to-end conversation integri
   assert.match(app, /async function runEndToEndTest\(\)/);
   assert.match(app, /fetch\(API\+"\/health"/);
   assert.match(app, /api\("\/runtime\/health"\)/);
+  assert.match(app, /api\("\/runtime\/missions"\)/);
+  assert.match(app, /api\("\/runtime\/queue"\)/);
+  assert.match(app, /api\("\/runtime\/approvals"\)/);
+  assert.match(app, /api\("\/governance\/commands\/catalog"\)/);
+  assert.match(app, /const pipelineOk=Array\.isArray\(missionSnapshot\)/);
+  assert.match(html, /data-check="pipeline"/);
   assert.match(app, /api\("\/mobile\/status"\)/);
   assert.match(app, /api\("\/mobile\/threads"\)/);
   assert.match(app, /api\("\/mobile\/threads\/"\+encodeURIComponent\(thread\.id\)\+"\/messages"/);

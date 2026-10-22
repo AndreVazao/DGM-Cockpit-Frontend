@@ -217,14 +217,15 @@
         localStorage.setItem(E2E_THREAD_KEY,String(thread.id));
       }
       const marker="DGM_E2E_"+Date.now().toString(36)+"_"+Math.random().toString(36).slice(2,8);
-      const testMessage="Teste de comunicação do cockpit DGM-MAT. Responde exatamente com "+marker+". Não executar tarefas nem criar missões.";
+      const testMessage="Ping local do cockpit DGM-MAT. Devolve apenas a sequência "+marker+".";
       const response=await readJson(await api("/mobile/threads/"+encodeURIComponent(thread.id)+"/messages",{method:"POST",body:JSON.stringify({content:testMessage})}));
       const responseThread=response.thread;
       const assistantReply=String(response.message||"").trim();
       const noMission=!response.mission_id;
-      const conversationOk=!!responseThread&&!!assistantReply&&noMission;
-      record("conversation","Mensagem e resposta",conversationOk,assistantReply?"resposta recebida · sem missão criada":"resposta vazia ou missão inesperada");
-      if(!conversationOk)throw new Error(response.mission_id?"O teste gerou uma missão inesperada; interrompido por segurança.":"O backend não confirmou uma resposta sem missão.");
+      const chatIntent=!!response.intent&&response.intent.intent==="chat";
+      const conversationOk=!!responseThread&&!!assistantReply&&noMission&&chatIntent;
+      record("conversation","Mensagem e resposta",conversationOk,assistantReply?(noMission&&chatIntent?"resposta recebida · intenção chat · sem missão":"intenção/resultado inesperado"):"resposta vazia");
+      if(!conversationOk)throw new Error(response.mission_id?"O teste gerou uma missão inesperada; interrompido por segurança.":!chatIntent?"O interpretador não classificou o ping como chat; histórico preservado, teste interrompido.":"O backend não confirmou uma resposta sem missão.");
       const persisted=await readJson(await api("/mobile/threads/"+encodeURIComponent(thread.id)));
       const messages=Array.isArray(persisted.messages)?persisted.messages:[];
       const userIndex=messages.findIndex(message=>message&&message.role==="user"&&String(message.content||"").includes(marker));

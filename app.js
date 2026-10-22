@@ -365,8 +365,8 @@
     button.disabled=true;
     setE2EState("running","A testar…");
     const lines=["DGM-MAT · teste de integridade E2E",new Date().toLocaleString("pt-PT"),""];
-    const steps=["api","runtime","session","conversation","persistence"];
-    steps.forEach(step=>setE2EStep(step,"running",({api:"API local",runtime:"Runtime do cérebro",session:"Sessão autenticada",conversation:"Envio e resposta",persistence:"Histórico consultável"})[step]+" · a verificar"));
+    const steps=["api","runtime","pipeline","session","conversation","persistence"];
+    steps.forEach(step=>setE2EStep(step,"running",({api:"API local",runtime:"Runtime do cérebro",pipeline:"Pipeline governado",session:"Sessão autenticada",conversation:"Envio e resposta",persistence:"Histórico consultável"})[step]+" · a verificar"));
     let failed=false;
     const record=(step,label,ok,detail)=>{
       setE2EStep(step,ok?"pass":"fail",label+" · "+(ok?"OK":"FALHOU"));
@@ -386,6 +386,19 @@
       const runtimeOk=!["unknown","unhealthy","error","failed","offline"].includes(runtimeStatus);
       record("runtime","Runtime do cérebro",runtimeOk,"estado reportado: "+runtimeStatus);
       if(!runtimeOk)throw new Error("O runtime respondeu, mas não confirmou um estado operacional.");
+      const missionSnapshot=await readJson(await api("/runtime/missions"));
+      const queueSnapshot=await readJson(await api("/runtime/queue"));
+      const approvalSnapshot=await readJson(await api("/runtime/approvals"));
+      const commandCatalog=await readJson(await api("/governance/commands/catalog"));
+      const pipelineOk=Array.isArray(missionSnapshot)
+        &&!!queueSnapshot&&typeof queueSnapshot==="object"&&Array.isArray(queueSnapshot.recent_actions)
+        &&Array.isArray(approvalSnapshot)
+        &&commandCatalog.mode==="read-only-allowlist"&&commandCatalog.arbitrary_shell===false
+        &&Array.isArray(commandCatalog.commands)&&commandCatalog.commands.every(command=>command&&command.risk==="READ");
+      record("pipeline","Pipeline e governação (só leitura)",pipelineOk,
+        "missões="+missionSnapshot.length+" · ações observáveis="+queueSnapshot.recent_actions.length
+        +" · aprovações pendentes="+approvalSnapshot.length+" · catálogo apenas leitura="+(commandCatalog.arbitrary_shell===false?"sim":"não"));
+      if(!pipelineOk)throw new Error("A fila, as aprovações ou o catálogo governado não confirmaram o contrato de leitura segura.");
       const mobileStatus=await readJson(await api("/mobile/status"));
       const threads=await readJson(await api("/mobile/threads"));
       const sessionOk=mobileStatus.status==="ready"&&Array.isArray(threads.threads);

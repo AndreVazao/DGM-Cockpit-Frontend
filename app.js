@@ -345,6 +345,90 @@
       showCommandResult("Não foi possível concluir o diagnóstico.\n"+error.message+"\n\nConfirma sessão de operador, backend e registo de auditoria.");
     }finally{if(button)button.disabled=false;}
   }
+  const E2E_THREAD_KEY = "dgm-mat-cockpit-e2e-thread-v1";
+  function setE2EStep(name,state,label){
+    const row=document.querySelector('[data-check="'+name+'"]');
+    if(!row)return;
+    row.dataset.state=state;
+    row.textContent=label;
+  }
+  function setE2EState(state,label){
+    const badge=$("e2eState");if(!badge)return;
+    badge.className="e2e-badge "+state;badge.textContent=label;
+  }
+  function showE2EResult(lines){
+    const root=$("e2eResult");if(root)root.textContent=lines.join("\n").slice(0,5000);
+  }
+  async function runEndToEndTest(){
+    const button=$("e2eTestButton");
+    if(!button||button.disabled)return;
+    button.disabled=true;
+    setE2EState("running","A testar…");
+    const lines=["DGM-MAT · teste de integridade E2E",new Date().toLocaleString("pt-PT"),""];
+    const steps=["api","runtime","session","conversation","persistence"];
+    steps.forEach(step=>setE2EStep(step,"running",({api:"API local",runtime:"Runtime do cérebro",session:"Sessão autenticada",conversation:"Envio e resposta",persistence:"Histórico consultável"})[step]+" · a verificar"));
+    let failed=false;
+    const record=(step,label,ok,detail)=>{
+      setE2EStep(step,ok?"pass":"fail",label+" · "+(ok?"OK":"FALHOU"));
+      lines.push((ok?"[OK] ":"[FALHOU] ")+label+(detail?" — "+detail:""));
+      if(!ok)failed=true;
+      showE2EResult(lines);
+    };
+    try{
+      const healthResponse=await fetch(API+"/health",{cache:"no-store"});
+      const health=await healthResponse.json().catch(()=>({}));
+      const apiOk=healthResponse.ok&&String(health.status||"").toLowerCase()==="healthy";
+      record("api","API local",apiOk,"HTTP "+healthResponse.status+(health.service?" · "+health.service:""));
+      if(!apiOk)throw new Error("A API local não confirmou estado healthy.");
+      if(!state.token)throw new Error("É necessário ligar o cockpit com bootstrap.token antes do teste autenticado.");
+      const runtime=await readJson(await api("/runtime/health"));
+      const runtimeStatus=String(runtime.status||runtime.state||"unknown").toLowerCase();
+      const runtimeOk=!["unknown","unhealthy","error","failed","offline"].includes(runtimeStatus);
+      record("runtime","Runtime do cérebro",runtimeOk,"estado reportado: "+runtimeStatus);
+      if(!runtimeOk)throw new Error("O runtime respondeu, mas não confirmou um estado operacional.");
+      const mobileStatus=await readJson(await api("/mobile/status"));
+      const threads=await readJson(await api("/mobile/threads"));
+      const sessionOk=mobileStatus.status==="ready"&&Array.isArray(threads.threads);
+      record("session","Sessão e API de conversas",sessionOk,"status="+String(mobileStatus.status||"desconhecido")+" · threads="+(Array.isArray(threads.threads)?threads.threads.length:"inválido"));
+      if(!sessionOk)throw new Error("A sessão ou o contrato da API de conversas não está válido.");
+      let thread=null;
+      const storedId=localStorage.getItem(E2E_THREAD_KEY)||"";
+      if(storedId){
+        try{thread=await readJson(await api("/mobile/threads/"+encodeURIComponent(storedId)));}
+        catch(_){localStorage.removeItem(E2E_THREAD_KEY);}
+      }
+      if(!thread||!thread.id){
+        thread=await readJson(await api("/mobile/threads",{method:"POST",body:JSON.stringify({title:"Diagnóstico E2E DGM-MAT"})}));
+        if(!thread.id)throw new Error("O backend não devolveu o identificador da conversa de diagnóstico.");
+        localStorage.setItem(E2E_THREAD_KEY,String(thread.id));
+      }
+      const marker="DGM_E2E_"+Date.now().toString(36)+"_"+Math.random().toString(36).slice(2,8);
+      const testMessage="Ping local do cockpit DGM-MAT. Devolve apenas a sequência "+marker+".";
+      const response=await readJson(await api("/mobile/threads/"+encodeURIComponent(thread.id)+"/messages",{method:"POST",body:JSON.stringify({content:testMessage})}));
+      const responseThread=response.thread;
+      const assistantReply=String(response.message||"").trim();
+      const noMission=!response.mission_id;
+      const chatIntent=!!response.intent&&response.intent.intent==="chat";
+      const conversationOk=!!responseThread&&!!assistantReply&&noMission&&chatIntent;
+      record("conversation","Mensagem e resposta",conversationOk,assistantReply?(noMission&&chatIntent?"resposta recebida · intenção chat · sem missão":"intenção/resultado inesperado"):"resposta vazia");
+      if(!conversationOk)throw new Error(response.mission_id?"O teste gerou uma missão inesperada; interrompido por segurança.":!chatIntent?"O interpretador não classificou o ping como chat; histórico preservado, teste interrompido.":"O backend não confirmou uma resposta sem missão.");
+      const persisted=await readJson(await api("/mobile/threads/"+encodeURIComponent(thread.id)));
+      const messages=Array.isArray(persisted.messages)?persisted.messages:[];
+      const userIndex=messages.findIndex(message=>message&&message.role==="user"&&String(message.content||"").includes(marker));
+      const assistantAfter=userIndex>=0&&messages.slice(userIndex+1).some(message=>message&&message.role==="assistant"&&String(message.content||"").trim());
+      const persistenceOk=persisted.id===thread.id&&userIndex>=0&&assistantAfter;
+      record("persistence","Histórico após nova consulta",persistenceOk,"mensagem do teste e resposta "+(persistenceOk?"encontradas":"não encontradas")+" na conversa "+thread.id);
+      if(!persistenceOk)throw new Error("A mensagem/resposta não foi encontrada ao voltar a consultar a conversa.");
+      lines.push("","RESULTADO: PASSOU","O teste verificou a API, runtime, sessão, resposta e histórico consultável. Não executou missões nem comandos.");
+      setE2EState("pass","Integridade confirmada");
+      showE2EResult(lines);
+    }catch(error){
+      lines.push("","RESULTADO: NÃO CONCLUÍDO","Motivo: "+String(error&&error.message||error),"Nenhuma missão/comando de diagnóstico foi intencionalmente submetido. Verifica o primeiro passo que falhou e repete.");
+      setE2EState(failed?"fail":"warn",failed?"Falhou":"Incompleto");
+      showE2EResult(lines);
+      steps.forEach(step=>{const row=document.querySelector('[data-check="'+step+'"]');if(row&&row.dataset.state==="running")setE2EStep(step,"skip",row.textContent.replace(" · a verificar"," · não executado"));});
+    }finally{button.disabled=false;}
+  }
   async function probeMotors(forceCatalog){
     setMotor("api","yellow","A testar /health…");
     try{
@@ -552,6 +636,7 @@
   });
   $("newChat").addEventListener("click",newDraft);
   $("motorRefresh").addEventListener("click",()=>probeMotors(true));
+  $("e2eTestButton").addEventListener("click",runEndToEndTest);
   $("runCommandButton").addEventListener("click",runSelectedCommand);
   $("commandSelect").addEventListener("change",syncCommandTargetField);
   $("refreshButton").addEventListener("click",refresh);

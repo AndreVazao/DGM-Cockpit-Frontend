@@ -180,6 +180,9 @@ test("minimal dashboard exposes a user-triggered end-to-end conversation integri
   assert.match(app, /api\("\/mobile\/threads\/"\+encodeURIComponent\(thread\.id\)\+"\/messages"/);
   assert.match(app, /const persisted=await readJson\(await api\("\/mobile\/threads\/"\+encodeURIComponent\(thread\.id\)\)\)/);
   assert.match(app, /const noMission=!response\.mission_id/);
+  assert.match(app, /const chatIntent=!!response\.intent&&response\.intent\.intent==="chat"/);
+  assert.match(app, /const testMessage="Ping local do cockpit DGM-MAT\. Devolve apenas a sequência "\+marker/);
+  assert.match(app, /E2E_THREAD_KEY/);
   assert.match(app, /RESULTADO: PASSOU/);
   assert.match(app, /Não executou missões nem comandos/);
 });

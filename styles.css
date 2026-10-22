@@ -23,3 +23,26 @@
 
 /* Governed command catalog controls */
 .motor-actions{display:flex;flex-direction:column;gap:8px}.command-label{font-size:10px;color:var(--muted)}.command-select,.command-target{width:100%;min-width:0;padding:8px;border:1px solid var(--line);border-radius:8px;background:#0b1020;color:var(--text);font:10px/1.4 system-ui,sans-serif}.command-target[hidden]{display:none}.motor-action{width:100%;padding:9px 10px;border:1px solid #344665;border-radius:9px;background:#1a2740;color:var(--text);font-size:11px;text-align:center}.motor-action:disabled{opacity:.55;cursor:wait}.command-result{margin:0;max-height:190px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;padding:9px;border:1px solid var(--line);border-radius:9px;background:#080d18;color:#b9c9e5;font:10px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace}.command-result:empty{display:none}
+
+
+/* Minimal, explicit end-to-end integrity panel. It runs only on a user click. */
+.e2e-panel{margin-top:18px;padding:14px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(150deg,rgba(75,105,170,.12),rgba(15,23,42,.72));}
+.e2e-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.e2e-heading>div{display:grid;gap:5px}
+.e2e-heading strong{font-size:13px;line-height:1.35}
+.e2e-kicker{font-size:9px;letter-spacing:.12em;color:var(--muted)}
+.e2e-badge{flex:0 0 auto;border:1px solid var(--line);border-radius:999px;padding:4px 7px;font-size:9px;color:var(--muted)}
+.e2e-badge.running{color:#f0cf82;border-color:#79643a}
+.e2e-badge.pass{color:#8fe0b5;border-color:#2c7855}
+.e2e-badge.fail{color:#ff9b9b;border-color:#874848}
+.e2e-badge.warn{color:#f0cf82;border-color:#79643a}
+.e2e-panel>p{font-size:10px;line-height:1.5;color:var(--muted);margin:9px 0}
+.e2e-button{width:100%;margin:4px 0 10px}
+.e2e-steps{list-style:none;display:grid;gap:5px;margin:0;padding:0}
+.e2e-steps li{font-size:10px;color:var(--muted);padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:rgba(8,13,25,.4)}
+.e2e-steps li[data-state="pass"]{color:#8fe0b5;border-color:#2c7855}
+.e2e-steps li[data-state="fail"]{color:#ff9b9b;border-color:#874848}
+.e2e-steps li[data-state="running"]{color:#f0cf82;border-color:#79643a}
+.e2e-steps li[data-state="skip"]{opacity:.7}
+.e2e-result{max-height:180px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font:10px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--muted);padding:9px;border-radius:9px;background:rgba(0,0,0,.2);border:1px solid var(--line);margin:9px 0 0}
+@media(max-width:1050px){.e2e-panel{margin-top:14px}}

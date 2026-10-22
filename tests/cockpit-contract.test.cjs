@@ -167,3 +167,19 @@ test("virtual office renders the declared role catalog separately from live tele
   assert.match(app, /Sem telemetria/);
   assert.doesNotMatch(app.slice(app.indexOf("function renderOfficeRoster"), app.indexOf("function renderOffice()")), /innerHTML/);
 });
+
+test("minimal dashboard exposes a user-triggered end-to-end conversation integrity check", () => {
+  assert.match(html, /id="e2eTestButton"/);
+  assert.match(html, /id="e2eSteps"/);
+  assert.match(html, /id="e2eResult"/);
+  assert.match(app, /async function runEndToEndTest\(\)/);
+  assert.match(app, /fetch\(API\+"\/health"/);
+  assert.match(app, /api\("\/runtime\/health"\)/);
+  assert.match(app, /api\("\/mobile\/status"\)/);
+  assert.match(app, /api\("\/mobile\/threads"\)/);
+  assert.match(app, /api\("\/mobile\/threads\/"\+encodeURIComponent\(thread\.id\)\+"\/messages"/);
+  assert.match(app, /const persisted=await readJson\(await api\("\/mobile\/threads\/"\+encodeURIComponent\(thread\.id\)\)\)/);
+  assert.match(app, /const noMission=!response\.mission_id/);
+  assert.match(app, /RESULTADO: PASSOU/);
+  assert.match(app, /Não executou missões nem comandos/);
+});

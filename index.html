@@ -166,6 +166,17 @@
             <h4>Aprovações &amp; segurança</h4><p class="room-role">Decisões humanas e execução autorizada</p><div class="room-foot"><span class="room-led"></span><span data-office-detail>O backend ainda não fornece eventos deste departamento</span></div>
           </article>
         </div>
+        <section class="office-roster-directory" id="officeRosterDirectory" aria-labelledby="officeRosterTitle">
+          <div class="office-section-heading"><div><span class="office-eyebrow">CATÁLOGO ORGANIZACIONAL</span><h3 id="officeRosterTitle">Departamentos e agentes definidos</h3></div><span class="office-readonly">Papéis declarados ≠ trabalhadores ativos</span></div>
+          <details class="office-roster-details">
+            <summary id="officeRosterSummary">A aguardar catálogo do backend…</summary>
+            <div class="office-roster-columns">
+              <div><h4>Departamentos</h4><div class="office-roster-grid" id="officeDeclaredDepartments"></div></div>
+              <div><h4>Agentes e especialidades</h4><div class="office-roster-grid" id="officeDeclaredAgents"></div></div>
+            </div>
+            <p class="office-roster-policy" id="officeRosterPolicy">O catálogo não comprova atividade real.</p>
+          </details>
+        </section>
         <div class="office-activity" aria-labelledby="officeActivityTitle">
           <div class="office-section-heading"><div><span class="office-eyebrow">REGISTO REAL</span><h3 id="officeActivityTitle">Atividade recente</h3></div><span class="office-readonly">Sem objetivos nem conteúdo privado</span></div>
           <p class="office-activity-empty" id="officeActivityEmpty">A aguardar telemetria autenticada.</p>
@@ -209,6 +220,13 @@
         <button id="runCommandButton" class="motor-action">Executar diagnóstico</button>
         <pre id="commandResult" class="command-result" aria-live="polite">Escolhe um diagnóstico do catálogo governado. A execução só começa quando carregares no botão.</pre>
       </div>
+      <section class="e2e-panel" aria-labelledby="e2eTitle">
+        <div class="e2e-heading"><div><span class="e2e-kicker">TESTE DE INTEGRIDADE</span><strong id="e2eTitle">Comunicação de ponta a ponta</strong></div><span id="e2eState" class="e2e-badge idle">Por testar</span></div>
+        <p>Verifica API, runtime, sessão, envio de mensagem e leitura do histórico persistido. Usa uma conversa de diagnóstico dedicada; não deve criar missões nem executar comandos.</p>
+        <button id="e2eTestButton" class="motor-action e2e-button" type="button">Executar teste E2E</button>
+        <ol id="e2eSteps" class="e2e-steps" aria-live="polite"><li data-check="api">API local</li><li data-check="runtime">Runtime do cérebro</li><li data-check="pipeline">Pipeline governado (só leitura)</li><li data-check="session">Sessão autenticada</li><li data-check="conversation">Envio e resposta</li><li data-check="persistence">Histórico consultável</li></ol>
+        <pre id="e2eResult" class="e2e-result" aria-live="polite">O teste só começa quando carregares no botão. Nenhuma ação é executada automaticamente.</pre>
+      </section>
       <p class="motor-footnote">Diagnósticos governados e auditados. Inventário é apenas observacional: não inicia nem termina processos.</p>
     </aside>
   </div>

@@ -155,3 +155,40 @@ test("logical floor directory navigates to matching operational rooms", () => {
   }
   assert.ok(css.includes(".floor-open:focus-visible"));
 });
+
+
+test("virtual office renders the declared role catalog separately from live telemetry", () => {
+  assert.match(html, /id="officeRosterDirectory"/);
+  assert.match(html, /id="officeDeclaredDepartments"/);
+  assert.match(html, /id="officeDeclaredAgents"/);
+  assert.match(app, /function renderOfficeRoster\(telemetry\)/);
+  assert.match(app, /const organization=telemetry&&telemetry\.organization/);
+  assert.match(html, /Papéis declarados ≠ trabalhadores ativos/);
+  assert.match(app, /Sem telemetria/);
+  assert.doesNotMatch(app.slice(app.indexOf("function renderOfficeRoster"), app.indexOf("function renderOffice()")), /innerHTML/);
+});
+
+test("minimal dashboard exposes a user-triggered end-to-end conversation integrity check", () => {
+  assert.match(html, /id="e2eTestButton"/);
+  assert.match(html, /id="e2eSteps"/);
+  assert.match(html, /id="e2eResult"/);
+  assert.match(app, /async function runEndToEndTest\(\)/);
+  assert.match(app, /fetch\(API\+"\/health"/);
+  assert.match(app, /api\("\/runtime\/health"\)/);
+  assert.match(app, /api\("\/runtime\/missions"\)/);
+  assert.match(app, /api\("\/runtime\/queue"\)/);
+  assert.match(app, /api\("\/runtime\/approvals"\)/);
+  assert.match(app, /api\("\/governance\/commands\/catalog"\)/);
+  assert.match(app, /const pipelineOk=Array\.isArray\(missionSnapshot\)/);
+  assert.match(html, /data-check="pipeline"/);
+  assert.match(app, /api\("\/mobile\/status"\)/);
+  assert.match(app, /api\("\/mobile\/threads"\)/);
+  assert.match(app, /api\("\/mobile\/threads\/"\+encodeURIComponent\(thread\.id\)\+"\/messages"/);
+  assert.match(app, /const persisted=await readJson\(await api\("\/mobile\/threads\/"\+encodeURIComponent\(thread\.id\)\)\)/);
+  assert.match(app, /const noMission=!response\.mission_id/);
+  assert.match(app, /const chatIntent=!!response\.intent&&response\.intent\.intent==="chat"/);
+  assert.match(app, /const testMessage="Ping local do cockpit DGM-MAT\. Devolve apenas a sequência "\+marker/);
+  assert.match(app, /E2E_THREAD_KEY/);
+  assert.match(app, /RESULTADO: PASSOU/);
+  assert.match(app, /Não executou missões nem comandos/);
+});

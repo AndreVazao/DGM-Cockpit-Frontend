@@ -16,20 +16,21 @@ Interface provisória, simples e exclusiva para utilizar no PC local: enviar pro
 - [x] Código da interface criado.
 - [x] Verificação sintática JavaScript concluída com PASS após o painel de motores.
 - [x] Painel lateral de motores com LEDs verde/amarelo/vermelho e sondas para API, conversas, Ollama e diagnóstico de autocorreção.
+- [x] Teste E2E acionado manualmente: API, runtime, sessão, envio de mensagem e leitura do histórico; utiliza uma conversa de diagnóstico dedicada e não submete missões/comandos.
 - [x] Controlo web mostrado como indisponível/não confirmado até existir implementação real.
 - [ ] Validação visual e de integração no PC real ainda pendente.
-- [ ] Testes de integração no PC real ainda por executar.
+- [ ] Testes de integração no PC real ainda por executar. O teste E2E da interface está implementado, mas ainda não foi executado contra o backend local.
 - [ ] Instalação/ativação local ainda por executar.
 - [ ] Capacidades de resposta e execução do DGM-MAT têm de ser validadas separadamente; a interface não transforma respostas de fallback em inteligência geral.
 
 ## Ativação prevista no PC
 1. Colocar o checkout em `C:\\ProgramasGodMode\\DGM-Cockpit-Frontend`.
-2. Configurar `DGM_MOBILE_UI_PATH=C:\\ProgramasGodMode\\DGM-Cockpit-Frontend` no ambiente/launcher do DGM-MAT. O nome desta variável é legado; nesta fase serve apenas para indicar a pasta da interface PC.
-3. Reiniciar a API do DGM-MAT.
-4. Abrir `http://127.0.0.1:8181/app/`.
+2. Usar a versão do backend que inclui o mount opcional do cockpit PC.
+3. Configurar `DGM_PC_COCKPIT_PATH=C:\\ProgramasGodMode\\DGM-Cockpit-Frontend` no ambiente/launcher do DGM-MAT.
+4. Reiniciar a API do DGM-MAT e abrir `http://127.0.0.1:8181/cockpit/`.
 5. Quando solicitado, selecionar `%LOCALAPPDATA%\\DGM-MAT\\security\\bootstrap.token` para obter uma sessão temporária.
 
-A API serve a interface em `/app` quando a pasta configurada contém `index.html`. Sem configuração explícita, o backend atual procura a antiga pasta `DGM-MAT-Mobile/web`.
+O caminho `/cockpit` é separado do shell móvel `/app`. A variável `DGM_PC_COCKPIT_PATH` é opcional: se a pasta não existir ou não contiver `index.html`, `app.js` e `styles.css`, o backend continua a arrancar sem montar o cockpit. A interface é servida pelo próprio backend local; não precisa de um servidor frontend separado.
 
 ## Contrato utilizado
 O frontend reutiliza o contrato de conversas que já existe no backend DGM-MAT:

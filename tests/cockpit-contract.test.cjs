@@ -155,3 +155,15 @@ test("logical floor directory navigates to matching operational rooms", () => {
   }
   assert.ok(css.includes(".floor-open:focus-visible"));
 });
+
+
+test("virtual office renders the declared role catalog separately from live telemetry", () => {
+  assert.match(html, /id="officeRosterDirectory"/);
+  assert.match(html, /id="officeDeclaredDepartments"/);
+  assert.match(html, /id="officeDeclaredAgents"/);
+  assert.match(app, /function renderOfficeRoster\(telemetry\)/);
+  assert.match(app, /const organization=telemetry&&telemetry\.organization/);
+  assert.match(app, /Papéis declarados ≠ trabalhadores ativos/);
+  assert.match(app, /Sem telemetria/);
+  assert.doesNotMatch(app.slice(app.indexOf("function renderOfficeRoster"), app.indexOf("function renderOffice()")), /innerHTML/);
+});

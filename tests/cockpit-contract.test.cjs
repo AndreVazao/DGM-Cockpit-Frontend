@@ -217,3 +217,12 @@ test("PC cockpit reports real AI engine readiness instead of treating API health
   assert.match(app, /motor de IA não configurado/);
   assert.match(app, /API e conversas disponíveis · execução por confirmar/);
 });
+
+
+test("cockpit diagnostics accept a healthy API with no configured AI model and report that separately", () => {
+  assert.match(app, /mobileStatus\.api_status==="ready"/);
+  assert.match(app, /mobileStatus\.ai_ready===true/);
+  assert.match(app, /data\.ai_ready===true/);
+  assert.match(app, /API de conversas ativa; motor de IA não configurado/);
+  assert.doesNotMatch(app, /mobileStatus\.status==="ready"/);
+});

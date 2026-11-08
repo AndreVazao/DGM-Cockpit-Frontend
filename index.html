@@ -253,5 +253,14 @@
     </form>
   </dialog>
   <script src="./app.js" defer></script>
+
+  <dialog id="recoveryDialog" aria-labelledby="recoveryTitle">
+    <section class="recovery-dialog">
+      <h2 id="recoveryTitle">Arquivo importado</h2>
+      <p id="recoveryMeta" class="muted">Consulta só de leitura.</p>
+      <div id="recoveryMessages" class="recovery-messages"></div>
+      <div class="dialog-actions"><button id="closeRecovery" class="primary" type="button">Fechar</button></div>
+    </section>
+  </dialog>
 </body>
 </html>

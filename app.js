@@ -553,12 +553,17 @@
     (t&&t.messages||[]).forEach(m=>addMessage(ui.messages,m));
     if(t&&t.local){ui.context.textContent="Rascunho local · ainda não sincronizado";}
     ui.chat.scrollTop=ui.chat.scrollHeight;
-    const combined=[...state.threads,...state.localDrafts].sort((a,b)=>new Date(b.updated_at||b.created_at)-new Date(a.updated_at||a.created_at));
+    const combined=state.historySearchResults===null
+      ? [...state.threads,...state.localDrafts].sort((a,b)=>new Date(b.updated_at||b.created_at)-new Date(a.updated_at||a.created_at))
+      : state.historySearchResults.map(item=>({id:item.thread_id,title:item.title,updated_at:item.updated_at,searchSnippet:item.snippet,matchType:item.match_type}));
     ui.list.replaceChildren();
+    if(state.historySearchResults!==null&&!combined.length){
+      const empty=document.createElement("div");empty.className="thread-empty";empty.textContent="Não foram encontradas conversas com esse termo.";ui.list.append(empty);
+    }
     combined.forEach(thread=>{
       const button=document.createElement("button");button.className="thread"+(thread.id===state.activeId?" active":"");button.dataset.id=thread.id;
       const title=document.createElement("span");title.className="thread-title";title.textContent=thread.title||"Nova conversa";
-      const meta=document.createElement("span");meta.className="thread-meta";meta.textContent=new Date(thread.updated_at||thread.created_at||Date.now()).toLocaleString("pt-PT",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
+      const meta=document.createElement("span");meta.className="thread-meta";meta.textContent=thread.searchSnippet?(thread.matchType+" · "+thread.searchSnippet):new Date(thread.updated_at||thread.created_at||Date.now()).toLocaleString("pt-PT",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
       button.append(title,meta);ui.list.append(button);
     });
     ui.send.disabled=state.sending;
@@ -566,12 +571,28 @@
   }
   async function selectThread(id){
     state.activeId=id;
+    state.historySearchResults=null;
+    if(ui.threadSearch)ui.threadSearch.value="";
     const local=state.localDrafts.find(t=>t.id===id);
     if(!local && state.token){
       try{const thread=await readJson(await api("/mobile/threads/"+encodeURIComponent(id)));const i=state.threads.findIndex(t=>t.id===id);if(i>=0)state.threads[i]=thread;else state.threads.unshift(thread);}
       catch(error){setStatus(false,error.message);}
     }
     render();ui.sidebar.classList.remove("open");
+  }
+  async function searchHistory(query){
+    const value=String(query||"").trim();
+    if(value.length<2){state.historySearchResults=null;render();return;}
+    if(!state.token){openPairDialog();return;}
+    try{
+      const data=await readJson(await api("/mobile/threads/search?q="+encodeURIComponent(value)+"&limit=30"));
+      state.historySearchResults=Array.isArray(data.results)?data.results:[];
+      render();
+    }catch(error){
+      state.historySearchResults=[];
+      render();
+      setStatus(false,"Pesquisa do histórico indisponível · "+error.message);
+    }
   }
   async function createServerThread(title){
     return readJson(await api("/mobile/threads",{method:"POST",body:JSON.stringify({title:title||"Nova conversa"})}));
@@ -664,6 +685,18 @@
   ui.bootstrapPicker.addEventListener("change",async function(){const file=ui.bootstrapPicker.files&&ui.bootstrapPicker.files[0];await pairWithBootstrapFile(file);ui.bootstrapPicker.value="";});
   $("renameButton").addEventListener("click",renameActive);
   ui.list.addEventListener("click",event=>{const button=event.target.closest("[data-id]");if(button)selectThread(button.dataset.id);});
+  let historySearchTimer=null;
+  if(ui.threadSearch)ui.threadSearch.addEventListener("input",event=>{
+    if(historySearchTimer)clearTimeout(historySearchTimer);
+    const value=event.target.value;
+    historySearchTimer=setTimeout(()=>searchHistory(value),250);
+  });
+  $("pairWithToken").addEventListener("click",async()=>{
+    const token=ui.bootstrapTokenInput?ui.bootstrapTokenInput.value:"";
+    if(ui.bootstrapTokenInput)ui.bootstrapTokenInput.value="";
+    await pairWithBootstrapToken(token);
+  });
+
   $("attachButton").addEventListener("click",()=>ui.picker.click());
   ui.picker.addEventListener("change",()=>pickDocuments(ui.picker.files));
   $("sendButton").addEventListener("click",sendMessage);

@@ -226,3 +226,8 @@ test("cockpit diagnostics accept a healthy API with no configured AI model and r
   assert.match(app, /API de conversas ativa; motor de IA não configurado/);
   assert.doesNotMatch(app, /mobileStatus\.status==="ready"/);
 });
+
+
+test("cockpit history search reopens the local credential prompt after session expiry", () => {
+  assert.match(app, /if\(!state\.token\)openPairDialog\(\)/);
+});

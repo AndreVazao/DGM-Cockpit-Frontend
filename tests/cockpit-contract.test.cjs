@@ -192,3 +192,28 @@ test("minimal dashboard exposes a user-triggered end-to-end conversation integri
   assert.match(app, /RESULTADO: PASSOU/);
   assert.match(app, /Não executou missões nem comandos/);
 });
+
+
+test("PC cockpit searches durable conversation history through the authenticated brain API", () => {
+  assert.match(html, /id="threadSearch"/);
+  assert.match(app, /async function searchHistory\(query\)/);
+  assert.match(app, /\/mobile\/threads\/search\?q=/);
+  assert.match(app, /Não foram encontradas conversas com esse termo/);
+  assert.match(app, /state\.historySearchResults/);
+});
+
+test("PC cockpit accepts a local bootstrap credential without persisting the secret", () => {
+  assert.match(html, /id="bootstrapTokenInput" type="password"/);
+  assert.match(html, /id="pairWithToken"/);
+  assert.match(app, /async function pairWithBootstrapToken\(bootstrap\)/);
+  assert.match(app, /sessionStorage\.setItem\(SESSION_KEY,state\.token\)/);
+  assert.doesNotMatch(app, /localStorage\.setItem\([^,]*(?:bootstrap|credential|token)/i);
+  assert.match(app, /if\(ui\.bootstrapTokenInput\)ui\.bootstrapTokenInput\.value=""/);
+});
+
+test("PC cockpit reports real AI engine readiness instead of treating API health as AI availability", () => {
+  assert.match(app, /status\.governed_chat&&status\.governed_chat\.available/);
+  assert.match(app, /status\.ollama&&status\.ollama\.available/);
+  assert.match(app, /motor de IA não configurado/);
+  assert.match(app, /API e conversas disponíveis · execução por confirmar/);
+});

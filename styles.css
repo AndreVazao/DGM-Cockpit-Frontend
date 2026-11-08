@@ -179,3 +179,4 @@
 .recovery-message{border:1px solid var(--line);border-radius:12px;background:#0d1526;padding:12px 14px}
 .recovery-message strong{display:block;color:var(--accent2);font-size:11px;text-transform:uppercase;margin-bottom:6px}
 .recovery-message p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6;font-size:12px}
+.recovery-metadata-only{opacity:.62;cursor:not-allowed}

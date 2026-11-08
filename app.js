@@ -593,6 +593,7 @@
       state.historySearchResults=[];
       render();
       setStatus(false,"Pesquisa do histórico indisponível · "+error.message);
+      if(!state.token)openPairDialog();
     }
   }
   async function createServerThread(title){

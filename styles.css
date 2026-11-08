@@ -170,3 +170,12 @@
 .credential-entry button{flex:0 0 auto}
 
 .thread-empty{padding:12px;color:var(--muted);font-size:12px}
+
+.recovery-thread{border-left:2px solid var(--accent);border-radius:0 10px 10px 0}
+.recovery-dialog{width:min(860px,92vw);max-height:82vh;padding:22px;display:flex;flex-direction:column;gap:10px}
+.recovery-dialog h2{margin:0;font-size:18px}
+.recovery-dialog p{margin:0}
+.recovery-messages{overflow:auto;min-height:0;max-height:60vh;display:flex;flex-direction:column;gap:10px;padding:4px 2px}
+.recovery-message{border:1px solid var(--line);border-radius:12px;background:#0d1526;padding:12px 14px}
+.recovery-message strong{display:block;color:var(--accent2);font-size:11px;text-transform:uppercase;margin-bottom:6px}
+.recovery-message p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6;font-size:12px}

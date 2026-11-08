@@ -236,7 +236,7 @@ test("cockpit history search reopens the local credential prompt after session e
 test("PC cockpit searches imported ChatGPT archive metadata and message text alongside local threads", () => {
   assert.match(app, /\/recovery\/search\?q=/);
   assert.match(app, /kind:"recovery"/);
-  assert.match(app, /data\.recoveryProvider=item\.provider/);
+  assert.match(app, /button\.dataset\.recoveryProvider=item\.provider/);
   assert.match(app, /async function openRecoverySource\(provider,sourceId\)/);
   assert.match(app, /\/recovery\/sources\//);
   assert.match(app, /archive_sha256_verified/);

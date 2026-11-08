@@ -741,6 +741,7 @@
     const value=event.target.value;
     historySearchTimer=setTimeout(()=>searchHistory(value),250);
   });
+  $("closeRecovery").addEventListener("click",()=>$("recoveryDialog").close());
   $("pairWithToken").addEventListener("click",async()=>{
     const token=ui.bootstrapTokenInput?ui.bootstrapTokenInput.value:"";
     if(ui.bootstrapTokenInput)ui.bootstrapTokenInput.value="";

@@ -168,3 +168,5 @@
 .credential-entry{display:flex;gap:8px;align-items:center;margin:8px 0 12px}
 .credential-entry input{flex:1;min-width:0;padding:10px 11px;border:1px solid var(--line);border-radius:10px;background:#0d1526;color:var(--text)}
 .credential-entry button{flex:0 0 auto}
+
+.thread-empty{padding:12px;color:var(--muted);font-size:12px}

@@ -8,13 +8,13 @@
   const MAX_TOTAL_BYTES = 5 * 1024 * 1024;
   const MAX_FILES = 8;
   const ALLOWED_EXT = new Set(["txt","md","markdown","json","jsonl","csv","tsv","py","js","ts","tsx","jsx","html","css","xml","yaml","yml","toml","ini","cfg","log","ps1","bat","cmd","sql","sh","rst","diff","patch"]);
-  const state = { token: sessionStorage.getItem(SESSION_KEY) || "", threads: [], activeId: null, attachments: [], localDrafts: loadDrafts(), sending: false, availableCommands: [] };
+  const state = { token: sessionStorage.getItem(SESSION_KEY) || "", threads: [], activeId: null, attachments: [], localDrafts: loadDrafts(), sending: false, availableCommands: [], historySearchResults: null };
   const $ = id => document.getElementById(id);
   const ui = {
     sidebar:$("sidebar"), list:$("threadList"), chat:$("chat"), messages:$("messages"), welcome:$("welcome"),
     title:$("conversationTitle"), context:$("contextLine"), statusDot:$("statusDot"), statusText:$("statusText"),
     input:$("messageInput"), send:$("sendButton"), attach:$("attachButton"), picker:$("documentPicker"),
-    bootstrapPicker:$("bootstrapPicker"), pairDialog:$("pairDialog"), pairError:$("pairError"),
+    bootstrapPicker:$("bootstrapPicker"), pairDialog:$("pairDialog"), pairError:$("pairError"), bootstrapTokenInput:$("bootstrapTokenInput"), threadSearch:$("threadSearch"),
     renameDialog:$("renameDialog"), renameInput:$("renameInput"), attachmentList:$("attachmentList")
   };
   function loadDrafts(){ try { const d=JSON.parse(localStorage.getItem(THREADS_KEY)||"[]"); return Array.isArray(d)?d:[]; } catch(_){ return []; } }
@@ -30,21 +30,27 @@
     return fetch(API+path,Object.assign({},options||{},{headers,cache:"no-store"}));
   }
   async function readJson(response){ let data={}; try{data=await response.json();}catch(_){} if(!response.ok){if(response.status===401){state.token="";sessionStorage.removeItem(SESSION_KEY);} throw new Error(data.detail||("HTTP "+response.status));} return data; }
+  async function pairWithBootstrapToken(bootstrap){
+    ui.pairError.textContent="";
+    const token=String(bootstrap||"").trim();
+    if(token.length<60||token.length>16384){ui.pairError.textContent="A credencial local é inválida ou está incompleta.";return;}
+    try{
+      const response=await fetch(API+"/auth/session",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},body:JSON.stringify({client_id:"dgm-mat-desktop-cockpit"})});
+      const data=await readJson(response);
+      state.token=data.access_token;
+      sessionStorage.setItem(SESSION_KEY,state.token);
+      if(ui.bootstrapTokenInput)ui.bootstrapTokenInput.value="";
+      ui.pairDialog.close();
+      await refresh();
+    }catch(error){ui.pairError.textContent="Não foi possível ligar: "+error.message+". Confirma que a credencial é válida e que abriste o cockpit no PC local.";}
+  }
   async function pairWithBootstrapFile(file){
     ui.pairError.textContent="";
     if(!file){return;}
     if(!["token","txt"].includes((file.name.split(".").pop()||"").toLowerCase())){ui.pairError.textContent="Seleciona o ficheiro bootstrap.token.";return;}
     if(file.size>16384){ui.pairError.textContent="O ficheiro selecionado não parece ser um token de bootstrap válido.";return;}
     const bootstrap=(await file.text()).trim();
-    if(bootstrap.length<60){ui.pairError.textContent="O token selecionado é inválido ou está incompleto.";return;}
-    try{
-      const response=await fetch(API+"/auth/session",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+bootstrap},body:JSON.stringify({client_id:"dgm-mat-desktop-cockpit"})});
-      const data=await readJson(response);
-      state.token=data.access_token;
-      sessionStorage.setItem(SESSION_KEY,state.token);
-      ui.pairDialog.close();
-      await refresh();
-    }catch(error){ui.pairError.textContent="Não foi possível ligar: "+error.message+". Confirma que abriste o cockpit pelo PC local e escolheste o bootstrap.token correto.";}
+    await pairWithBootstrapToken(bootstrap);
   }
   async function refresh(){
     if(!state.token){setStatus(false,"Não ligado · sessão local necessária");render();return false;}
@@ -56,7 +62,7 @@
       if(localActive && localActive.messages.length===0){ /* keep empty draft selected */ }
       else if(!state.activeId || !state.threads.some(t=>t.id===state.activeId)) state.activeId=state.threads[0]&&state.threads[0].id||null;
       setStatus(true,"API e conversas disponíveis · execução por confirmar");
-      ui.context.textContent="DGM-MAT · "+(status.ollama&&status.ollama.available?"Ollama disponível":"modo de resposta do runtime");
+      const governedReady=Boolean(status.governed_chat&&status.governed_chat.available);const ollamaReady=Boolean(status.ollama&&status.ollama.available);ui.context.textContent="DGM-MAT · "+(governedReady?"IA governada disponível":ollamaReady?"Ollama local disponível":"motor de IA não configurado");
       render();
       return true;
     }catch(error){

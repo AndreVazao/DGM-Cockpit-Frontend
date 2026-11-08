@@ -563,9 +563,11 @@
     }
     combined.forEach(item=>{
       const recovery=item.kind==="recovery";
+      const canOpenRecovery=recovery&&String(item.provider||"").toLowerCase()==="chatgpt";
       const button=document.createElement("button");
       button.className="thread"+(!recovery&&item.id===state.activeId?" active":"")+(recovery?" recovery-thread":"");
-      if(recovery){button.dataset.recoveryProvider=item.provider;button.dataset.recoverySource=item.source_id;}
+      if(canOpenRecovery){button.dataset.recoveryProvider=item.provider;button.dataset.recoverySource=item.source_id;}
+      else if(recovery){button.disabled=true;button.classList.add("recovery-metadata-only");}
       else button.dataset.id=item.thread_id||item.id;
       const title=document.createElement("span");title.className="thread-title";title.textContent=item.title||"Nova conversa";
       const meta=document.createElement("span");meta.className="thread-meta";

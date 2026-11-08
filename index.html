@@ -16,6 +16,7 @@
       <button class="new-chat" id="newChat"><span>＋</span> Nova conversa</button>
       <div class="connection"><span class="dot" id="statusDot"></span><span id="statusText">A verificar ligação…</span></div>
       <div class="sidebar-label">CONVERSAS</div>
+      <input id="threadSearch" class="thread-search" type="search" placeholder="Pesquisar conversas anteriores…" aria-label="Pesquisar conversas anteriores" autocomplete="off">
       <div class="thread-list" id="threadList" aria-label="Histórico de conversas"></div>
       <div class="sidebar-bottom">
         <button class="quiet-button" id="refreshButton">↻ Sincronizar histórico</button>
@@ -243,8 +244,11 @@
     <form method="dialog" class="dialog-form">
       <h2>Ligar ao cérebro do DGM-MAT</h2>
       <p>Seleciona o ficheiro local <code>bootstrap.token</code>. Normalmente fica em <code>%LOCALAPPDATA%\\DGM-MAT\\security\\bootstrap.token</code>. O conteúdo é usado apenas para pedir uma sessão temporária; não é guardado no browser.</p>
-      <p class="muted">Abre esta interface no PC através de <code>http://127.0.0.1:8181/app/</code> ou <code>http://localhost:8181/app/</code>.</p>
-      <div class="dialog-actions"><button class="secondary" value="cancel">Cancelar</button><button class="primary" id="chooseToken" value="choose">Selecionar ficheiro…</button></div>
+      <p class="muted">Abre esta interface no PC através de <code>http://127.0.0.1:8181/cockpit/</code> ou <code>http://localhost:8181/cockpit/</code>.</p>
+      <label for="bootstrapTokenInput">Credencial local do PC (não fica guardada)</label>
+      <div class="credential-entry"><input id="bootstrapTokenInput" type="password" autocomplete="off" spellcheck="false" placeholder="Cola o token bootstrap local"><button class="primary" id="pairWithToken" type="button">Ligar</button></div>
+      <p class="muted">Também podes selecionar o ficheiro original. O token bootstrap é enviado apenas para a API local e não é persistido no browser.</p>
+      <div class="dialog-actions"><button class="secondary" value="cancel">Cancelar</button><button class="secondary" id="chooseToken" value="choose">Selecionar ficheiro…</button></div>
       <p id="pairError" class="error" role="alert"></p>
     </form>
   </dialog>

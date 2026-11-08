@@ -231,3 +231,22 @@ test("cockpit diagnostics accept a healthy API with no configured AI model and r
 test("cockpit history search reopens the local credential prompt after session expiry", () => {
   assert.match(app, /if\(!state\.token\)openPairDialog\(\)/);
 });
+
+
+test("PC cockpit searches imported ChatGPT archive metadata and message text alongside local threads", () => {
+  assert.match(app, /\/recovery\/search\?q=/);
+  assert.match(app, /kind:"recovery"/);
+  assert.match(app, /data\.recoveryProvider=item\.provider/);
+  assert.match(app, /async function openRecoverySource\(provider,sourceId\)/);
+  assert.match(app, /\/recovery\/sources\//);
+  assert.match(app, /archive_sha256_verified/);
+  assert.match(html, /id="recoveryDialog"/);
+  assert.match(html, /id="recoveryMessages"/);
+});
+
+test("imported recovery archive is displayed read-only with bounded message pages and textContent", () => {
+  assert.match(app, /limit=50&offset=0/);
+  assert.match(app, /content\.textContent=recoveryText\(item\.content\)/);
+  assert.match(app, /consulta só de leitura/);
+  assert.match(app, /function recoveryText\(value\)/);
+});

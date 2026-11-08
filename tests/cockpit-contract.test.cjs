@@ -250,3 +250,10 @@ test("imported recovery archive is displayed read-only with bounded message page
   assert.match(app, /consulta só de leitura/);
   assert.match(app, /function recoveryText\(value\)/);
 });
+
+
+test("PC cockpit only opens imported ChatGPT archives with an indexed message reader", () => {
+  assert.match(app, /item\.provider\|\|""\)\.toLowerCase\(\)==="chatgpt"/);
+  assert.match(app, /button\.disabled=true/);
+  assert.match(app, /recovery-metadata-only/);
+});

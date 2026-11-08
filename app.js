@@ -75,7 +75,7 @@
   const motorState = [
     {id:"api",name:"API DGM-MAT",state:"yellow",detail:"A verificar…"},
     {id:"chat",name:"Conversas / histórico",state:"yellow",detail:"À espera de sessão"},
-    {id:"ollama",name:"Motor de IA local",state:"yellow",detail:"A verificar…"},
+    {id:"ollama",name:"Motor de IA",state:"yellow",detail:"A verificar…"},
     {id:"repair",name:"Autocorreção",state:"yellow",detail:"A verificar endpoint"},
     {id:"executor",name:"Executor governado",state:"yellow",detail:"A verificar catálogo autorizado"},
     {id:"inventory",name:"Inventário de motores",state:"yellow",detail:"Ainda não consultado"},
@@ -407,8 +407,9 @@
       if(!pipelineOk)throw new Error("A fila, as aprovações ou o catálogo governado não confirmaram o contrato de leitura segura.");
       const mobileStatus=await readJson(await api("/mobile/status"));
       const threads=await readJson(await api("/mobile/threads"));
-      const sessionOk=mobileStatus.status==="ready"&&Array.isArray(threads.threads);
-      record("session","Sessão e API de conversas",sessionOk,"status="+String(mobileStatus.status||"desconhecido")+" · threads="+(Array.isArray(threads.threads)?threads.threads.length:"inválido"));
+      const sessionOk=mobileStatus.api_status==="ready"&&Array.isArray(threads.threads);
+      record("session","Sessão e API de conversas",sessionOk,"api_status="+String(mobileStatus.api_status||"desconhecido")+" · threads="+(Array.isArray(threads.threads)?threads.threads.length:"inválido"));
+      record("ai","Motor de IA",mobileStatus.ai_ready===true,"modo="+String(mobileStatus.ai_mode||"não configurado"));
       if(!sessionOk)throw new Error("A sessão ou o contrato da API de conversas não está válido.");
       let thread=null;
       const storedId=localStorage.getItem(E2E_THREAD_KEY)||"";
@@ -471,8 +472,8 @@
     try{
       const data=await readJson(await api("/mobile/status"));
       setMotor("chat","green","API de conversas respondeu");
-      if(data.ollama&&data.ollama.available)setMotor("ollama","green","Ollama reportado como disponível");
-      else setMotor("ollama","yellow","Não disponível ou não confirmado pelo runtime");
+      if(data.ai_ready===true)setMotor("ollama","green","Motor de IA disponível: "+String(data.ai_mode||"confirmado"));
+      else setMotor("ollama","yellow","API de conversas ativa; motor de IA não configurado ("+String(data.ai_mode||"não confirmado")+")");
     }catch(error){
       setMotor("chat","red","Falha ao consultar conversas: "+error.message);
       setMotor("ollama","yellow","Estado não confirmado");

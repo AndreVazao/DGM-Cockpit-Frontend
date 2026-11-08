@@ -556,15 +556,22 @@
     ui.chat.scrollTop=ui.chat.scrollHeight;
     const combined=state.historySearchResults===null
       ? [...state.threads,...state.localDrafts].sort((a,b)=>new Date(b.updated_at||b.created_at)-new Date(a.updated_at||a.created_at))
-      : state.historySearchResults.map(item=>({id:item.thread_id,title:item.title,updated_at:item.updated_at,searchSnippet:item.snippet,matchType:item.match_type}));
+      : state.historySearchResults;
     ui.list.replaceChildren();
     if(state.historySearchResults!==null&&!combined.length){
-      const empty=document.createElement("div");empty.className="thread-empty";empty.textContent="Não foram encontradas conversas com esse termo.";ui.list.append(empty);
+      const empty=document.createElement("div");empty.className="thread-empty";empty.textContent="Não foram encontradas conversas locais nem arquivos importados.";ui.list.append(empty);
     }
-    combined.forEach(thread=>{
-      const button=document.createElement("button");button.className="thread"+(thread.id===state.activeId?" active":"");button.dataset.id=thread.id;
-      const title=document.createElement("span");title.className="thread-title";title.textContent=thread.title||"Nova conversa";
-      const meta=document.createElement("span");meta.className="thread-meta";meta.textContent=thread.searchSnippet?(thread.matchType+" · "+thread.searchSnippet):new Date(thread.updated_at||thread.created_at||Date.now()).toLocaleString("pt-PT",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
+    combined.forEach(item=>{
+      const recovery=item.kind==="recovery";
+      const button=document.createElement("button");
+      button.className="thread"+(!recovery&&item.id===state.activeId?" active":"")+(recovery?" recovery-thread":"");
+      if(recovery){button.dataset.recoveryProvider=item.provider;button.dataset.recoverySource=item.source_id;}
+      else button.dataset.id=item.thread_id||item.id;
+      const title=document.createElement("span");title.className="thread-title";title.textContent=item.title||"Nova conversa";
+      const meta=document.createElement("span");meta.className="thread-meta";
+      const match=item.match_type||item.matchType||"conversa";
+      const source=recovery?"Arquivo "+String(item.provider||"importado"):match;
+      meta.textContent=item.snippet?(source+" · "+item.snippet):new Date(item.updated_at||item.created_at||Date.now()).toLocaleString("pt-PT",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
       button.append(title,meta);ui.list.append(button);
     });
     ui.send.disabled=state.sending;
@@ -581,13 +588,54 @@
     }
     render();ui.sidebar.classList.remove("open");
   }
+  function recoveryText(value){
+    const parts=[];
+    function collect(item){
+      if(typeof item==="string"){parts.push(item);return;}
+      if(Array.isArray(item)){item.forEach(collect);return;}
+      if(item&&typeof item==="object"){
+        if(typeof item.text==="string"){parts.push(item.text);return;}
+        if(Array.isArray(item.parts)){collect(item.parts);return;}
+        if(typeof item.content==="string"){parts.push(item.content);return;}
+      }
+    }
+    collect(value);
+    return (parts.join("\n").trim()||JSON.stringify(value)).slice(0,8000);
+  }
+  async function openRecoverySource(provider,sourceId){
+    const dialog=$("recoveryDialog"),list=$("recoveryMessages");
+    $("recoveryTitle").textContent="Arquivo importado · "+String(provider||"");
+    $("recoveryMeta").textContent="A verificar integridade e a carregar mensagens…";
+    list.replaceChildren();
+    if(!dialog.open)dialog.showModal();
+    try{
+      const data=await readJson(await api("/recovery/sources/"+encodeURIComponent(provider)+"/"+encodeURIComponent(sourceId)+"/messages?limit=50&offset=0"));
+      $("recoveryTitle").textContent=data.title||("Arquivo "+provider);
+      $("recoveryMeta").textContent=String(data.total_messages||0)+" mensagens · "+String((data.items||[]).length)+" carregadas · "+(data.archive_sha256_verified?"SHA-256 verificado":"integridade não confirmada")+" · consulta só de leitura"+(data.total_messages>50?" · a mostrar as primeiras 50":"");
+      (Array.isArray(data.items)?data.items:[]).forEach(item=>{
+        const row=document.createElement("article");row.className="recovery-message";
+        const role=document.createElement("strong");role.textContent=String(item.role||"unknown");
+        const content=document.createElement("p");content.textContent=recoveryText(item.content);
+        row.append(role,content);list.append(row);
+      });
+      if(!data.items||!data.items.length){const empty=document.createElement("p");empty.className="thread-empty";empty.textContent="O arquivo não contém mensagens nesta página.";list.append(empty);}
+    }catch(error){
+      $("recoveryMeta").textContent="Não foi possível abrir o arquivo: "+error.message;
+      if(!state.token)openPairDialog();
+    }
+  }
   async function searchHistory(query){
     const value=String(query||"").trim();
     if(value.length<2){state.historySearchResults=null;render();return;}
     if(!state.token){openPairDialog();return;}
     try{
-      const data=await readJson(await api("/mobile/threads/search?q="+encodeURIComponent(value)+"&limit=30"));
-      state.historySearchResults=Array.isArray(data.results)?data.results:[];
+      const [localData,recoveryData]=await Promise.all([
+        readJson(await api("/mobile/threads/search?q="+encodeURIComponent(value)+"&limit=30")),
+        readJson(await api("/recovery/search?q="+encodeURIComponent(value)+"&limit=30"))
+      ]);
+      const localResults=(Array.isArray(localData.results)?localData.results:[]).map(item=>({...item,kind:"thread"}));
+      const recoveryResults=(Array.isArray(recoveryData.results)?recoveryData.results:[]).map(item=>({...item,kind:"recovery"}));
+      state.historySearchResults=[...localResults,...recoveryResults];
       render();
     }catch(error){
       state.historySearchResults=[];
@@ -686,7 +734,7 @@
   $("chooseToken").addEventListener("click",function(event){event.preventDefault();ui.pairDialog.close();ui.bootstrapPicker.click();});
   ui.bootstrapPicker.addEventListener("change",async function(){const file=ui.bootstrapPicker.files&&ui.bootstrapPicker.files[0];await pairWithBootstrapFile(file);ui.bootstrapPicker.value="";});
   $("renameButton").addEventListener("click",renameActive);
-  ui.list.addEventListener("click",event=>{const button=event.target.closest("[data-id]");if(button)selectThread(button.dataset.id);});
+  ui.list.addEventListener("click",event=>{const recovery=event.target.closest("[data-recovery-provider]");if(recovery){openRecoverySource(recovery.dataset.recoveryProvider,recovery.dataset.recoverySource);return;}const button=event.target.closest("[data-id]");if(button)selectThread(button.dataset.id);});
   let historySearchTimer=null;
   if(ui.threadSearch)ui.threadSearch.addEventListener("input",event=>{
     if(historySearchTimer)clearTimeout(historySearchTimer);

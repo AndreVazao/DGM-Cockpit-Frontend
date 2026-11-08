@@ -151,3 +151,20 @@
 .e2e-steps li[data-state="skip"]{opacity:.7}
 .e2e-result{max-height:180px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font:10px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--muted);padding:9px;border-radius:9px;background:rgba(0,0,0,.2);border:1px solid var(--line);margin:9px 0 0}
 @media(max-width:1050px){.e2e-panel{margin-top:14px}}
+
+
+.thread-search{
+  width:calc(100% - 12px);
+  margin:0 6px 10px;
+  padding:10px 11px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:#0d1526;
+  color:var(--text);
+  outline:none;
+}
+.thread-search:focus{border-color:var(--accent);box-shadow:0 0 0 2px #83b1ff22}
+.thread-search::placeholder{color:var(--muted)}
+.credential-entry{display:flex;gap:8px;align-items:center;margin:8px 0 12px}
+.credential-entry input{flex:1;min-width:0;padding:10px 11px;border:1px solid var(--line);border-radius:10px;background:#0d1526;color:var(--text)}
+.credential-entry button{flex:0 0 auto}

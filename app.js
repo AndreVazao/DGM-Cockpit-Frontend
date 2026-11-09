@@ -8,13 +8,13 @@
   const MAX_TOTAL_BYTES = 5 * 1024 * 1024;
   const MAX_FILES = 8;
   const ALLOWED_EXT = new Set(["txt","md","markdown","json","jsonl","csv","tsv","py","js","ts","tsx","jsx","html","css","xml","yaml","yml","toml","ini","cfg","log","ps1","bat","cmd","sql","sh","rst","diff","patch"]);
-  const state = { token: sessionStorage.getItem(SESSION_KEY) || "", threads: [], activeId: null, attachments: [], localDrafts: loadDrafts(), sending: false, availableCommands: [] };
+  const state = { token: sessionStorage.getItem(SESSION_KEY) || "", threads: [], activeId: null, attachments: [], localDrafts: loadDrafts(), sending: false, availableCommands: [], historySearchResults: null };
   const $ = id => document.getElementById(id);
   const ui = {
     sidebar:$("sidebar"), list:$("threadList"), chat:$("chat"), messages:$("messages"), welcome:$("welcome"),
     title:$("conversationTitle"), context:$("contextLine"), statusDot:$("statusDot"), statusText:$("statusText"),
     input:$("messageInput"), send:$("sendButton"), attach:$("attachButton"), picker:$("documentPicker"),
-    bootstrapPicker:$("bootstrapPicker"), pairDialog:$("pairDialog"), pairError:$("pairError"),
+    bootstrapPicker:$("bootstrapPicker"), pairDialog:$("pairDialog"), pairError:$("pairError"), bootstrapTokenInput:$("bootstrapTokenInput"), threadSearch:$("threadSearch"),
     renameDialog:$("renameDialog"), renameInput:$("renameInput"), attachmentList:$("attachmentList")
   };
   function loadDrafts(){ try { const d=JSON.parse(localStorage.getItem(THREADS_KEY)||"[]"); return Array.isArray(d)?d:[]; } catch(_){ return []; } }
@@ -30,21 +30,27 @@
     return fetch(API+path,Object.assign({},options||{},{headers,cache:"no-store"}));
   }
   async function readJson(response){ let data={}; try{data=await response.json();}catch(_){} if(!response.ok){if(response.status===401){state.token="";sessionStorage.removeItem(SESSION_KEY);} throw new Error(data.detail||("HTTP "+response.status));} return data; }
+  async function pairWithBootstrapToken(bootstrap){
+    ui.pairError.textContent="";
+    const token=String(bootstrap||"").trim();
+    if(token.length<60||token.length>16384){ui.pairError.textContent="A credencial local é inválida ou está incompleta.";return;}
+    try{
+      const response=await fetch(API+"/auth/session",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},body:JSON.stringify({client_id:"dgm-mat-desktop-cockpit"})});
+      const data=await readJson(response);
+      state.token=data.access_token;
+      sessionStorage.setItem(SESSION_KEY,state.token);
+      if(ui.bootstrapTokenInput)ui.bootstrapTokenInput.value="";
+      ui.pairDialog.close();
+      await refresh();
+    }catch(error){ui.pairError.textContent="Não foi possível ligar: "+error.message+". Confirma que a credencial é válida e que abriste o cockpit no PC local.";}
+  }
   async function pairWithBootstrapFile(file){
     ui.pairError.textContent="";
     if(!file){return;}
     if(!["token","txt"].includes((file.name.split(".").pop()||"").toLowerCase())){ui.pairError.textContent="Seleciona o ficheiro bootstrap.token.";return;}
     if(file.size>16384){ui.pairError.textContent="O ficheiro selecionado não parece ser um token de bootstrap válido.";return;}
     const bootstrap=(await file.text()).trim();
-    if(bootstrap.length<60){ui.pairError.textContent="O token selecionado é inválido ou está incompleto.";return;}
-    try{
-      const response=await fetch(API+"/auth/session",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+bootstrap},body:JSON.stringify({client_id:"dgm-mat-desktop-cockpit"})});
-      const data=await readJson(response);
-      state.token=data.access_token;
-      sessionStorage.setItem(SESSION_KEY,state.token);
-      ui.pairDialog.close();
-      await refresh();
-    }catch(error){ui.pairError.textContent="Não foi possível ligar: "+error.message+". Confirma que abriste o cockpit pelo PC local e escolheste o bootstrap.token correto.";}
+    await pairWithBootstrapToken(bootstrap);
   }
   async function refresh(){
     if(!state.token){setStatus(false,"Não ligado · sessão local necessária");render();return false;}
@@ -56,7 +62,7 @@
       if(localActive && localActive.messages.length===0){ /* keep empty draft selected */ }
       else if(!state.activeId || !state.threads.some(t=>t.id===state.activeId)) state.activeId=state.threads[0]&&state.threads[0].id||null;
       setStatus(true,"API e conversas disponíveis · execução por confirmar");
-      ui.context.textContent="DGM-MAT · "+(status.ollama&&status.ollama.available?"Ollama disponível":"modo de resposta do runtime");
+      const governedReady=Boolean(status.governed_chat&&status.governed_chat.available);const ollamaReady=Boolean(status.ollama&&status.ollama.available);ui.context.textContent="DGM-MAT · "+(governedReady?"IA governada disponível":ollamaReady?"Ollama local disponível":"motor de IA não configurado");
       render();
       return true;
     }catch(error){
@@ -69,7 +75,7 @@
   const motorState = [
     {id:"api",name:"API DGM-MAT",state:"yellow",detail:"A verificar…"},
     {id:"chat",name:"Conversas / histórico",state:"yellow",detail:"À espera de sessão"},
-    {id:"ollama",name:"Motor de IA local",state:"yellow",detail:"A verificar…"},
+    {id:"ollama",name:"Motor de IA",state:"yellow",detail:"A verificar…"},
     {id:"repair",name:"Autocorreção",state:"yellow",detail:"A verificar endpoint"},
     {id:"executor",name:"Executor governado",state:"yellow",detail:"A verificar catálogo autorizado"},
     {id:"inventory",name:"Inventário de motores",state:"yellow",detail:"Ainda não consultado"},
@@ -401,8 +407,9 @@
       if(!pipelineOk)throw new Error("A fila, as aprovações ou o catálogo governado não confirmaram o contrato de leitura segura.");
       const mobileStatus=await readJson(await api("/mobile/status"));
       const threads=await readJson(await api("/mobile/threads"));
-      const sessionOk=mobileStatus.status==="ready"&&Array.isArray(threads.threads);
-      record("session","Sessão e API de conversas",sessionOk,"status="+String(mobileStatus.status||"desconhecido")+" · threads="+(Array.isArray(threads.threads)?threads.threads.length:"inválido"));
+      const sessionOk=mobileStatus.api_status==="ready"&&Array.isArray(threads.threads);
+      record("session","Sessão e API de conversas",sessionOk,"api_status="+String(mobileStatus.api_status||"desconhecido")+" · threads="+(Array.isArray(threads.threads)?threads.threads.length:"inválido"));
+      record("ai","Motor de IA",mobileStatus.ai_ready===true,"modo="+String(mobileStatus.ai_mode||"não configurado"));
       if(!sessionOk)throw new Error("A sessão ou o contrato da API de conversas não está válido.");
       let thread=null;
       const storedId=localStorage.getItem(E2E_THREAD_KEY)||"";
@@ -465,8 +472,8 @@
     try{
       const data=await readJson(await api("/mobile/status"));
       setMotor("chat","green","API de conversas respondeu");
-      if(data.ollama&&data.ollama.available)setMotor("ollama","green","Ollama reportado como disponível");
-      else setMotor("ollama","yellow","Não disponível ou não confirmado pelo runtime");
+      if(data.ai_ready===true)setMotor("ollama","green","Motor de IA disponível: "+String(data.ai_mode||"confirmado"));
+      else setMotor("ollama","yellow","API de conversas ativa; motor de IA não configurado ("+String(data.ai_mode||"não confirmado")+")");
     }catch(error){
       setMotor("chat","red","Falha ao consultar conversas: "+error.message);
       setMotor("ollama","yellow","Estado não confirmado");
@@ -547,12 +554,26 @@
     (t&&t.messages||[]).forEach(m=>addMessage(ui.messages,m));
     if(t&&t.local){ui.context.textContent="Rascunho local · ainda não sincronizado";}
     ui.chat.scrollTop=ui.chat.scrollHeight;
-    const combined=[...state.threads,...state.localDrafts].sort((a,b)=>new Date(b.updated_at||b.created_at)-new Date(a.updated_at||a.created_at));
+    const combined=state.historySearchResults===null
+      ? [...state.threads,...state.localDrafts].sort((a,b)=>new Date(b.updated_at||b.created_at)-new Date(a.updated_at||a.created_at))
+      : state.historySearchResults;
     ui.list.replaceChildren();
-    combined.forEach(thread=>{
-      const button=document.createElement("button");button.className="thread"+(thread.id===state.activeId?" active":"");button.dataset.id=thread.id;
-      const title=document.createElement("span");title.className="thread-title";title.textContent=thread.title||"Nova conversa";
-      const meta=document.createElement("span");meta.className="thread-meta";meta.textContent=new Date(thread.updated_at||thread.created_at||Date.now()).toLocaleString("pt-PT",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
+    if(state.historySearchResults!==null&&!combined.length){
+      const empty=document.createElement("div");empty.className="thread-empty";empty.textContent="Não foram encontradas conversas locais nem arquivos importados.";ui.list.append(empty);
+    }
+    combined.forEach(item=>{
+      const recovery=item.kind==="recovery";
+      const canOpenRecovery=recovery&&String(item.provider||"").toLowerCase()==="chatgpt";
+      const button=document.createElement("button");
+      button.className="thread"+(!recovery&&item.id===state.activeId?" active":"")+(recovery?" recovery-thread":"");
+      if(canOpenRecovery){button.dataset.recoveryProvider=item.provider;button.dataset.recoverySource=item.source_id;}
+      else if(recovery){button.disabled=true;button.classList.add("recovery-metadata-only");}
+      else button.dataset.id=item.thread_id||item.id;
+      const title=document.createElement("span");title.className="thread-title";title.textContent=item.title||"Nova conversa";
+      const meta=document.createElement("span");meta.className="thread-meta";
+      const match=item.match_type||item.matchType||"conversa";
+      const source=recovery?"Arquivo "+String(item.provider||"importado"):match;
+      meta.textContent=item.snippet?(source+" · "+item.snippet):new Date(item.updated_at||item.created_at||Date.now()).toLocaleString("pt-PT",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
       button.append(title,meta);ui.list.append(button);
     });
     ui.send.disabled=state.sending;
@@ -560,12 +581,70 @@
   }
   async function selectThread(id){
     state.activeId=id;
+    state.historySearchResults=null;
+    if(ui.threadSearch)ui.threadSearch.value="";
     const local=state.localDrafts.find(t=>t.id===id);
     if(!local && state.token){
       try{const thread=await readJson(await api("/mobile/threads/"+encodeURIComponent(id)));const i=state.threads.findIndex(t=>t.id===id);if(i>=0)state.threads[i]=thread;else state.threads.unshift(thread);}
       catch(error){setStatus(false,error.message);}
     }
     render();ui.sidebar.classList.remove("open");
+  }
+  function recoveryText(value){
+    const parts=[];
+    function collect(item){
+      if(typeof item==="string"){parts.push(item);return;}
+      if(Array.isArray(item)){item.forEach(collect);return;}
+      if(item&&typeof item==="object"){
+        if(typeof item.text==="string"){parts.push(item.text);return;}
+        if(Array.isArray(item.parts)){collect(item.parts);return;}
+        if(typeof item.content==="string"){parts.push(item.content);return;}
+      }
+    }
+    collect(value);
+    return (parts.join("\n").trim()||JSON.stringify(value)).slice(0,8000);
+  }
+  async function openRecoverySource(provider,sourceId){
+    const dialog=$("recoveryDialog"),list=$("recoveryMessages");
+    $("recoveryTitle").textContent="Arquivo importado · "+String(provider||"");
+    $("recoveryMeta").textContent="A verificar integridade e a carregar mensagens…";
+    list.replaceChildren();
+    if(!dialog.open)dialog.showModal();
+    try{
+      const data=await readJson(await api("/recovery/sources/"+encodeURIComponent(provider)+"/"+encodeURIComponent(sourceId)+"/messages?limit=50&offset=0"));
+      $("recoveryTitle").textContent=data.title||("Arquivo "+provider);
+      $("recoveryMeta").textContent=String(data.total_messages||0)+" mensagens · "+String((data.items||[]).length)+" carregadas · "+(data.archive_sha256_verified?"SHA-256 verificado":"integridade não confirmada")+" · consulta só de leitura"+(data.total_messages>50?" · a mostrar as primeiras 50":"");
+      (Array.isArray(data.items)?data.items:[]).forEach(item=>{
+        const row=document.createElement("article");row.className="recovery-message";
+        const role=document.createElement("strong");role.textContent=String(item.role||"unknown");
+        const content=document.createElement("p");content.textContent=recoveryText(item.content);
+        row.append(role,content);list.append(row);
+      });
+      if(!data.items||!data.items.length){const empty=document.createElement("p");empty.className="thread-empty";empty.textContent="O arquivo não contém mensagens nesta página.";list.append(empty);}
+    }catch(error){
+      $("recoveryMeta").textContent="Não foi possível abrir o arquivo: "+error.message;
+      if(!state.token)openPairDialog();
+    }
+  }
+  async function searchHistory(query){
+    const value=String(query||"").trim();
+    if(value.length<2){state.historySearchResults=null;render();return;}
+    if(!state.token){openPairDialog();return;}
+    try{
+      const [localData,recoveryData]=await Promise.all([
+        readJson(await api("/mobile/threads/search?q="+encodeURIComponent(value)+"&limit=30")),
+        readJson(await api("/recovery/search?q="+encodeURIComponent(value)+"&limit=30"))
+      ]);
+      const localResults=(Array.isArray(localData.results)?localData.results:[]).map(item=>({...item,kind:"thread"}));
+      const recoveryResults=(Array.isArray(recoveryData.results)?recoveryData.results:[]).map(item=>({...item,kind:"recovery"}));
+      state.historySearchResults=[...localResults,...recoveryResults];
+      render();
+    }catch(error){
+      state.historySearchResults=[];
+      render();
+      setStatus(false,"Pesquisa do histórico indisponível · "+error.message);
+      if(!state.token)openPairDialog();
+    }
   }
   async function createServerThread(title){
     return readJson(await api("/mobile/threads",{method:"POST",body:JSON.stringify({title:title||"Nova conversa"})}));
@@ -657,7 +736,20 @@
   $("chooseToken").addEventListener("click",function(event){event.preventDefault();ui.pairDialog.close();ui.bootstrapPicker.click();});
   ui.bootstrapPicker.addEventListener("change",async function(){const file=ui.bootstrapPicker.files&&ui.bootstrapPicker.files[0];await pairWithBootstrapFile(file);ui.bootstrapPicker.value="";});
   $("renameButton").addEventListener("click",renameActive);
-  ui.list.addEventListener("click",event=>{const button=event.target.closest("[data-id]");if(button)selectThread(button.dataset.id);});
+  ui.list.addEventListener("click",event=>{const recovery=event.target.closest("[data-recovery-provider]");if(recovery){openRecoverySource(recovery.dataset.recoveryProvider,recovery.dataset.recoverySource);return;}const button=event.target.closest("[data-id]");if(button)selectThread(button.dataset.id);});
+  let historySearchTimer=null;
+  if(ui.threadSearch)ui.threadSearch.addEventListener("input",event=>{
+    if(historySearchTimer)clearTimeout(historySearchTimer);
+    const value=event.target.value;
+    historySearchTimer=setTimeout(()=>searchHistory(value),250);
+  });
+  $("closeRecovery").addEventListener("click",()=>$("recoveryDialog").close());
+  $("pairWithToken").addEventListener("click",async()=>{
+    const token=ui.bootstrapTokenInput?ui.bootstrapTokenInput.value:"";
+    if(ui.bootstrapTokenInput)ui.bootstrapTokenInput.value="";
+    await pairWithBootstrapToken(token);
+  });
+
   $("attachButton").addEventListener("click",()=>ui.picker.click());
   ui.picker.addEventListener("change",()=>pickDocuments(ui.picker.files));
   $("sendButton").addEventListener("click",sendMessage);

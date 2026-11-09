@@ -192,3 +192,68 @@ test("minimal dashboard exposes a user-triggered end-to-end conversation integri
   assert.match(app, /RESULTADO: PASSOU/);
   assert.match(app, /Não executou missões nem comandos/);
 });
+
+
+test("PC cockpit searches durable conversation history through the authenticated brain API", () => {
+  assert.match(html, /id="threadSearch"/);
+  assert.match(app, /async function searchHistory\(query\)/);
+  assert.match(app, /\/mobile\/threads\/search\?q=/);
+  assert.match(app, /Não foram encontradas conversas locais nem arquivos importados/);
+  assert.match(app, /state\.historySearchResults/);
+});
+
+test("PC cockpit accepts a local bootstrap credential without persisting the secret", () => {
+  assert.match(html, /id="bootstrapTokenInput" type="password"/);
+  assert.match(html, /id="pairWithToken"/);
+  assert.match(app, /async function pairWithBootstrapToken\(bootstrap\)/);
+  assert.match(app, /sessionStorage\.setItem\(SESSION_KEY,state\.token\)/);
+  assert.doesNotMatch(app, /localStorage\.setItem\([^,]*(?:bootstrap|credential|token)/i);
+  assert.match(app, /if\(ui\.bootstrapTokenInput\)ui\.bootstrapTokenInput\.value=""/);
+});
+
+test("PC cockpit reports real AI engine readiness instead of treating API health as AI availability", () => {
+  assert.match(app, /status\.governed_chat&&status\.governed_chat\.available/);
+  assert.match(app, /status\.ollama&&status\.ollama\.available/);
+  assert.match(app, /motor de IA não configurado/);
+  assert.match(app, /API e conversas disponíveis · execução por confirmar/);
+});
+
+
+test("cockpit diagnostics accept a healthy API with no configured AI model and report that separately", () => {
+  assert.match(app, /mobileStatus\.api_status==="ready"/);
+  assert.match(app, /mobileStatus\.ai_ready===true/);
+  assert.match(app, /data\.ai_ready===true/);
+  assert.match(app, /API de conversas ativa; motor de IA não configurado/);
+  assert.doesNotMatch(app, /mobileStatus\.status==="ready"/);
+});
+
+
+test("cockpit history search reopens the local credential prompt after session expiry", () => {
+  assert.match(app, /if\(!state\.token\)openPairDialog\(\)/);
+});
+
+
+test("PC cockpit searches imported ChatGPT archive metadata and message text alongside local threads", () => {
+  assert.match(app, /\/recovery\/search\?q=/);
+  assert.match(app, /kind:"recovery"/);
+  assert.match(app, /button\.dataset\.recoveryProvider=item\.provider/);
+  assert.match(app, /async function openRecoverySource\(provider,sourceId\)/);
+  assert.match(app, /\/recovery\/sources\//);
+  assert.match(app, /archive_sha256_verified/);
+  assert.match(html, /id="recoveryDialog"/);
+  assert.match(html, /id="recoveryMessages"/);
+});
+
+test("imported recovery archive is displayed read-only with bounded message pages and textContent", () => {
+  assert.match(app, /limit=50&offset=0/);
+  assert.match(app, /content\.textContent=recoveryText\(item\.content\)/);
+  assert.match(app, /consulta só de leitura/);
+  assert.match(app, /function recoveryText\(value\)/);
+});
+
+
+test("PC cockpit only opens imported ChatGPT archives with an indexed message reader", () => {
+  assert.match(app, /item\.provider\|\|""\)\.toLowerCase\(\)==="chatgpt"/);
+  assert.match(app, /button\.disabled=true/);
+  assert.match(app, /recovery-metadata-only/);
+});

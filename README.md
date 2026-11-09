@@ -29,3 +29,12 @@ O cockpit combina a vista leve do escritório digital com o chat de comandos. A 
 Para servir esta interface pelo backend local, coloca este repositório em `C:\\ProgramasGodMode\\DGM-Cockpit-Frontend` e configura `DGM_PC_COCKPIT_PATH=C:\\ProgramasGodMode\\DGM-Cockpit-Frontend`. Depois de integrar o mount opcional no DGM-MAT e reiniciar a API, abre `http://127.0.0.1:8181/cockpit/`. O mount é independente da rota móvel `/app` e a sua ausência não impede o arranque do cérebro.
 
 Na vista Chat, seleciona o ficheiro `%LOCALAPPDATA%\\DGM-MAT\\security\\bootstrap.token` quando for pedido. O painel «Teste de integridade» executa apenas quando clicas no botão: verifica API, runtime, endpoints de missões/fila/aprovações e catálogo governado em leitura, sessão, round-trip de conversa e consulta do histórico. Usa uma thread de diagnóstico dedicada, envia um ping neutro e exige intenção `chat` sem `mission_id`; não deve criar missões nem executar comandos. O teste ainda precisa de ser executado contra o backend real no PC.
+
+
+## Pesquisa do histórico e credencial local
+
+- A barra lateral pesquisa conversas persistidas através de `GET /mobile/threads/search`; o backend devolve apenas metadados e snippets curtos.
+- A pesquisa requer o backend atualizado do DGM-MAT (PR #285).
+- O diálogo de ligação aceita o ficheiro `bootstrap.token` ou colagem manual do token. O segredo bootstrap é enviado apenas ao endpoint loopback `/auth/session`, limpo do campo e nunca guardado no browser; apenas a sessão temporária fica em `sessionStorage`.
+- O contexto do chat mostra separadamente a disponibilidade da API e a disponibilidade efetiva de um motor de IA governado/Ollama. Não confundir saúde HTTP com inferência funcional.
+- Não inserir API keys de fornecedores neste cockpit enquanto o CredentialVault não tiver proteção da chave-mestra pelo sistema operativo (Windows DPAPI/Windows Credential Manager).

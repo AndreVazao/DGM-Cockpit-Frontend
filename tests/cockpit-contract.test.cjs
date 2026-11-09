@@ -281,8 +281,8 @@ test("cockpit issues only fixed typed read-only task kinds and never sends paths
 });
 
 test("cockpit displays durable task receipts and resumes queued work only on explicit click", () => {
-  assert.match(app, /\/runtime\/organization\/tasks\/\+encodeURIComponent\(taskId\)/);
-  assert.match(app, /\/runtime\/organization\/tasks\/\+encodeURIComponent\(organizationTask\.task_id\)\+"\/dispatch"/);
+  assert.ok(app.includes('api("/runtime/organization/tasks/"+encodeURIComponent(taskId))'));
+  assert.ok(app.includes('api("/runtime/organization/tasks/"+encodeURIComponent(organizationTask.task_id)+"/dispatch"'));
   assert.match(app, /async function resumeOrganizationTask\(\)/);
   assert.match(app, /durable_receipt/);
   assert.match(app, /msg/);

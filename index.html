@@ -110,6 +110,38 @@
           <div class="office-kpi"><span>Ações em execução</span><strong id="officeRunningActions">—</strong></div>
           <div class="office-kpi"><span>Worker da fila</span><strong id="officeWorkerStatus">Sem leitura</strong></div>
         </div>
+        <section class="organization-task-console" aria-labelledby="organizationTaskTitle">
+          <div class="office-section-heading">
+            <div><span class="office-eyebrow">ORDENS E RESULTADOS</span><h3 id="organizationTaskTitle">Centro de tarefas DGM-MAT</h3></div>
+            <span id="orgTaskStatus" class="org-task-status state-unknown">Sem tarefa selecionada</span>
+          </div>
+          <p class="org-task-policy">Ordens tipadas aos especialistas read-only. O ID do repositório tem de existir na allowlist configurada no PC. A aprovação valida apenas o resultado apresentado; não autoriza alterações de código, commits ou deploys.</p>
+          <div class="org-task-form">
+            <label for="orgTaskKind">Tipo de ordem</label>
+            <select id="orgTaskKind">
+              <option value="repository_inventory">Inventariar repositório</option>
+              <option value="python_source_analysis">Analisar código Python</option>
+              <option value="python_test_inventory">Inventariar testes Python</option>
+            </select>
+            <label for="orgRepositoryId">ID do repositório na allowlist</label>
+            <input id="orgRepositoryId" type="text" maxlength="64" autocomplete="off" spellcheck="false" placeholder="Ex.: DGM-MAT">
+            <div class="org-task-actions">
+              <button id="orgTaskCreateButton" type="button">Dar ordem</button>
+              <button id="orgTaskRefreshButton" type="button" class="secondary">Consultar resultado</button>
+              <button id="orgTaskResumeButton" type="button" class="secondary" hidden>Retomar tarefa</button>
+              <button id="orgTaskReviewButton" type="button" class="secondary" hidden>Pedir aprovação do resultado</button>
+              <button id="orgTaskApproveButton" type="button" hidden>Aprovar resultado</button>
+              <button id="orgTaskRejectButton" type="button" class="danger" hidden>Rejeitar resultado</button>
+            </div>
+          </div>
+          <label class="org-task-reject-label" for="orgTaskRejectReason" id="orgTaskRejectLabel" hidden>Motivo da rejeição</label>
+          <textarea id="orgTaskRejectReason" rows="2" maxlength="1000" placeholder="Explica por que o resultado não deve ser aceite." hidden></textarea>
+          <div class="org-task-evidence">
+            <div><strong>Tarefa</strong><code id="orgTaskId">—</code></div>
+            <div><strong>SHA-256 do resultado</strong><code id="orgTaskDigest">—</code></div>
+          </div>
+          <pre id="orgTaskResult" class="org-task-result" aria-live="polite">Nenhuma ordem foi enviada. A execução só começa quando carregares em «Dar ordem».</pre>
+        </section>
         <section class="office-floor-directory" id="officeFloorDirectory" aria-labelledby="officeFloorTitle">
           <div class="office-section-heading"><div><span class="office-eyebrow">PLANTA LÓGICA</span><h3 id="officeFloorTitle">Pisos e responsabilidades da sede</h3></div><span class="office-readonly">Estado por telemetria · sem fonte = desconhecido</span></div>
           <div class="office-floor-grid">

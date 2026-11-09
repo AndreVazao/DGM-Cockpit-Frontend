@@ -121,3 +121,27 @@ Uma resposta HTTP 2xx, um botão que deixa de girar, uma missão criada ou uma m
 - DGM-Cockpit-Frontend `main`: `app.js`, `index.html`, `tests/cockpit-contract.test.cjs`, `docs/AUDIT_AND_INTEGRATION.md`.
 - DGM-MAT `main`: `core/api/runtime_api.py`, `core/api/api_server.py`, `core/api/security_policy.py`, `core/api/mobile_bridge.py`, `docs/architecture/DGM-MAT-CANONICAL-OPERATING-MODEL-END-TO-END-AND-DEPARTMENTS-2026-10-21.md`.
 - Inspeção remota do código apenas; não houve acesso ao PC, teste HTTP local nem execução de testes nesta sessão.
+
+
+## 6. Centro de tarefas read-only e revisão de resultados
+
+A vista do escritório contém agora um painel operacional separado da telemetria observacional. Nenhum pedido é enviado automaticamente: o operador tem de clicar em **Dar ordem**.
+
+| Endpoint | Ação do cockpit | Condições |
+|---|---|---|
+| `POST /runtime/organization/tasks` | Enviar uma ordem tipada | Sessão `operator`; apenas `repository_inventory`, `python_source_analysis` ou `python_test_inventory`; ID do repositório, nunca caminho ou comando. |
+| `POST /runtime/organization/tasks/{task_id}/dispatch` | Retomar uma ordem em fila | Sessão `operator`; apenas tarefa ainda atribuída e pendente. |
+| `GET /runtime/organization/tasks/{task_id}` | Consultar estado, recibo, resultado, SHA-256 e decisão | Sessão `local-client`. |
+| `POST /runtime/organization/tasks/{task_id}/approval` | Submeter o resultado exato a revisão | Sessão `operator`; exige tarefa concluída, recibo durável e digest atual. |
+| `POST /runtime/organization/tasks/{task_id}/decision` | Aprovar ou rejeitar o resultado | Sessão `operator`; repete o digest, verifica o envelope e regista o operador autenticado. Rejeição exige motivo. |
+
+O painel apresenta o identificador da tarefa, ID da mensagem, resultado estruturado e SHA-256. O último ID de tarefa é guardado apenas em `sessionStorage`, nunca o token bootstrap. A resposta do worker é escrita com `textContent`, não interpretada como HTML.
+
+**Estados de decisão:**
+
+- `COMPLETED` com `durable_receipt=true` e SHA-256 válido: pode pedir revisão.
+- `awaiting_approval`: pode aprovar ou rejeitar o resultado exato.
+- `approved` / `rejected`: decisão durável apresentada com identidade do operador.
+- `BLOCKED`, `WORKER_BLOCKED`, `QUEUED` ou `RESULT_UNVERIFIED`: nunca mostram controlos de aprovação.
+
+Esta aprovação valida apenas o resultado read-only apresentado. Não aprova patches, não dá permissão de escrita, não faz merge e não faz deploy. A execução de código por Codex/Claude exige o executor controlado e um gate separado ligado ao digest do patch.

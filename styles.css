@@ -180,3 +180,27 @@
 .recovery-message strong{display:block;color:var(--accent2);font-size:11px;text-transform:uppercase;margin-bottom:6px}
 .recovery-message p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6;font-size:12px}
 .recovery-metadata-only{opacity:.62;cursor:not-allowed}
+
+/* Authenticated read-only specialist task console: explicit orders and digest-bound review. */
+.organization-task-console{max-width:1280px;margin:0 auto 24px;padding:18px;border:1px solid #2d4261;border-radius:16px;background:linear-gradient(145deg,#14243a,#0e1728)}
+.org-task-policy{margin:8px 0 14px;color:#9eafca;font-size:11px;line-height:1.55}
+.org-task-status{padding:5px 9px;border:1px solid #3a4b63;border-radius:999px;color:#a6b5ca;font-size:10px;white-space:nowrap}
+.org-task-status.state-green{border-color:#2e7d67;color:#7fe0ba}
+.org-task-status.state-yellow{border-color:#8b713b;color:#f0cf87}
+.org-task-status.state-red{border-color:#8d4852;color:#ff9ca6}
+.org-task-form{display:grid;grid-template-columns:170px minmax(0,1fr);align-items:center;gap:9px 12px;max-width:900px}
+.org-task-form label,.org-task-reject-label{color:#b9c8df;font-size:11px}
+.org-task-form select,.org-task-form input,.organization-task-console textarea{width:100%;min-width:0;padding:9px 10px;border:1px solid #344967;border-radius:9px;background:#0a1220;color:#eef3ff;font:11px/1.4 system-ui,sans-serif}
+.org-task-actions{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.org-task-actions button{padding:8px 12px;border:1px solid #49678d;border-radius:9px;background:#1b3150;color:#e8f1ff;font:600 11px system-ui,sans-serif}
+.org-task-actions button.secondary{background:#111f33;border-color:#344967;color:#c3d3eb}
+.org-task-actions button.danger{background:#3a1d2a;border-color:#784454;color:#ffdce2}
+.org-task-actions button:disabled{opacity:.45;cursor:not-allowed}
+.org-task-reject-label{display:block;margin-top:12px}
+.organization-task-console textarea{display:block;max-width:900px;margin-top:6px;resize:vertical}
+.org-task-evidence{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr);gap:10px;margin-top:14px}
+.org-task-evidence>div{min-width:0;display:grid;gap:5px;padding:10px;border:1px solid #293c59;border-radius:10px;background:#0d1727}
+.org-task-evidence strong{font-size:10px;color:#91a4c1}
+.org-task-evidence code{font:10px/1.4 ui-monospace,monospace;overflow-wrap:anywhere;color:#c8dcf8}
+.org-task-result{max-height:280px;overflow:auto;margin:12px 0 0;padding:12px;border:1px solid #293c59;border-radius:10px;background:#09111e;color:#d6e4f7;font:10px/1.55 ui-monospace,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:700px){.organization-task-console{padding:13px;margin-bottom:18px}.org-task-form{grid-template-columns:1fr;gap:6px}.org-task-form label{margin-top:5px}.org-task-actions{gap:6px}.org-task-actions button{flex:1 1 45%;min-width:0}.org-task-evidence{grid-template-columns:1fr}.org-task-status{white-space:normal;text-align:center}}

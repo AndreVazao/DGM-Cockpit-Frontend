@@ -257,3 +257,60 @@ test("PC cockpit only opens imported ChatGPT archives with an indexed message re
   assert.match(app, /button\.disabled=true/);
   assert.match(app, /recovery-metadata-only/);
 });
+
+
+test("office exposes a user-triggered read-only organization task console", () => {
+  for (const id of [
+    "orgTaskKind","orgRepositoryId","orgTaskCreateButton","orgTaskRefreshButton",
+    "orgTaskResumeButton","orgTaskReviewButton","orgTaskApproveButton",
+    "orgTaskRejectButton","orgTaskRejectReason","orgTaskId","orgTaskDigest","orgTaskResult"
+  ]) assert.ok(html.includes('id="'+id+'"'), "missing task-console control "+id);
+  assert.match(html, /A aprovação valida apenas o resultado apresentado/);
+  assert.match(html, /não autoriza alterações de código/);
+});
+
+test("cockpit issues only fixed typed read-only task kinds and never sends paths or shell commands", () => {
+  assert.match(app, /async function createOrganizationTask\(\)/);
+  assert.match(app, /repository_inventory/);
+  assert.match(app, /python_source_analysis/);
+  assert.match(app, /python_test_inventory/);
+  assert.match(app, /\/runtime\/organization\/tasks/);
+  assert.match(app, /task_kind:taskKind,repository_id:repositoryId/);
+  assert.match(app, /Não introduzas um caminho de ficheiro/);
+  assert.doesNotMatch(app.slice(app.indexOf("async function createOrganizationTask"), app.indexOf("async function resumeOrganizationTask")), /command\s*:/);
+});
+
+test("cockpit displays durable task receipts and resumes queued work only on explicit click", () => {
+  assert.match(app, /\/runtime\/organization\/tasks\/\+encodeURIComponent\(taskId\)/);
+  assert.match(app, /\/runtime\/organization\/tasks\/\+encodeURIComponent\(organizationTask\.task_id\)\+"\/dispatch"/);
+  assert.match(app, /async function resumeOrganizationTask\(\)/);
+  assert.match(app, /durable_receipt/);
+  assert.match(app, /msg/);
+  assert.match(html, /id="orgTaskResumeButton"/);
+});
+
+test("cockpit only offers result approval for completed durable results with a SHA-256 digest", () => {
+  assert.match(app, /taskStatus==="COMPLETED"&&task\.durable_receipt===true/);
+  assert.match(app, /\^\[0-9a-f\]\{64\}\$/);
+  assert.match(app, /\/approval/);
+  assert.match(app, /\/decision/);
+  assert.match(app, /decision,result_sha256:organizationTask\.result_sha256/);
+  assert.match(app, /approvalStatus==="awaiting_approval"/);
+  assert.match(app, /approvalStatus==="approved"/);
+  assert.match(app, /approvalStatus==="rejected"/);
+  assert.match(app, /approvalStatus==="awaiting_approval"\?"state-yellow"/);
+});
+
+test("blocked and unverified worker results never expose approval controls", () => {
+  assert.match(app, /taskStatus==="BLOCKED"\|\|taskStatus==="FAILED"/);
+  assert.match(app, /review\.hidden=\!\(complete\&\&\!approvalStatus\)/);
+  assert.match(app, /approve\.hidden=\!\(complete\&\&approvalStatus==="awaiting_approval"\)/);
+  assert.match(app, /worker recusou|Especialista recusou/);
+});
+
+test("task results and identifiers are rendered as text and last task recovery is session-only", () => {
+  assert.match(app, /node\.textContent=String\(text\|\|""\)\.slice\(0,12000\)/);
+  assert.match(app, /sessionStorage\.setItem\(ORGANIZATION_TASK_KEY,task\.task_id\)/);
+  assert.match(app, /sessionStorage\.getItem\(ORGANIZATION_TASK_KEY\)/);
+  assert.doesNotMatch(app, /orgTaskResult\)\.innerHTML/);
+});

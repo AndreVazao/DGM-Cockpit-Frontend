@@ -3,6 +3,7 @@
   "use strict";
   const API = window.location.origin;
   const SESSION_KEY = "dgm-mat-cockpit-session-v1";
+  const ORGANIZATION_TASK_KEY = "dgm-mat-organization-task-last-v1";
   const THREADS_KEY = "dgm-mat-cockpit-local-v1";
   const MAX_FILE_BYTES = 2 * 1024 * 1024;
   const MAX_TOTAL_BYTES = 5 * 1024 * 1024;
@@ -64,6 +65,7 @@
       setStatus(true,"API e conversas disponíveis · execução por confirmar");
       const governedReady=Boolean(status.governed_chat&&status.governed_chat.available);const ollamaReady=Boolean(status.ollama&&status.ollama.available);ui.context.textContent="DGM-MAT · "+(governedReady?"IA governada disponível":ollamaReady?"Ollama local disponível":"motor de IA não configurado");
       render();
+      restoreOrganizationTask();
       return true;
     }catch(error){
       setStatus(false,error.message==="Failed to fetch"?"PC indisponível · abre o cockpit no PC":"Sessão expirada ou API indisponível");
@@ -99,6 +101,8 @@
   let officeTelemetry=null;
   let officeTelemetryError="";
   let officeTelemetryLoading=false;
+  let organizationTask=null;
+  let organizationTaskRestoreStarted=false;
   function officeVisualState(state){
     if(state==="active")return "green";
     if(state==="waiting")return "yellow";
@@ -220,6 +224,119 @@
       if(led)led.className="room-led "+(motor.state||"unknown");
     });
     renderRecentMissionActivity(missions);
+    renderOrganizationTaskConsole();
+  }
+  function organizationTaskStatusLabel(status){
+    const labels={CREATED:"Criada",QUEUED:"Na fila",ASSIGNED:"Atribuída",RUNNING:"Em execução",BLOCKED:"Bloqueada",COMPLETED:"Concluída",FAILED:"Falhou",CANCELLED:"Cancelada",WORKER_BLOCKED:"Especialista recusou",RESULT_UNVERIFIED:"Resultado não verificado"};
+    return labels[String(status||"").toUpperCase()]||"Estado desconhecido";
+  }
+  function showOrganizationTaskResult(value){
+    const node=$("orgTaskResult");if(!node)return;
+    const text=typeof value==="string"?value:JSON.stringify(value,null,2);
+    node.textContent=String(text||"").slice(0,12000);
+  }
+  function renderOrganizationTaskConsole(){
+    const status=$("orgTaskStatus"),task=organizationTask;
+    const create=$("orgTaskCreateButton"),refreshButton=$("orgTaskRefreshButton");
+    const resume=$("orgTaskResumeButton"),review=$("orgTaskReviewButton");
+    const approve=$("orgTaskApproveButton"),reject=$("orgTaskRejectButton");
+    const reason=$("orgTaskRejectReason"),reasonLabel=$("orgTaskRejectLabel");
+    const taskId=$("orgTaskId"),digest=$("orgTaskDigest");
+    if(!status||!create||!refreshButton||!resume||!review||!approve||!reject)return;
+    const taskStatus=task&&String(task.status||"").toUpperCase();
+    const approvalStatus=task&&String(task.approval_status||"").toLowerCase();
+    const complete=!!task&&taskStatus==="COMPLETED"&&task.durable_receipt===true&&/^[0-9a-f]{64}$/.test(String(task.result_sha256||""));
+    status.textContent=task?organizationTaskStatusLabel(task.status):"Sem tarefa selecionada";
+    status.className="org-task-status "+(taskStatus==="COMPLETED"?"state-green":taskStatus==="BLOCKED"||taskStatus==="FAILED"?"state-red":taskStatus==="QUEUED"||approvalStatus==="awaiting_approval"?"state-yellow":"state-unknown");
+    if(taskId)taskId.textContent=task?String(task.task_id||"—"):"—";
+    if(digest)digest.textContent=task&&task.result_sha256?String(task.result_sha256):"—";
+    resume.hidden=!(task&&taskStatus==="ASSIGNED");
+    review.hidden=!(complete&&!approvalStatus);
+    approve.hidden=!(complete&&approvalStatus==="awaiting_approval");
+    reject.hidden=!(complete&&approvalStatus==="awaiting_approval");
+    if(reason)reason.hidden=!(complete&&approvalStatus==="awaiting_approval");
+    if(reasonLabel)reasonLabel.hidden=!(complete&&approvalStatus==="awaiting_approval");
+    refreshButton.disabled=!task||!task.task_id;
+    create.disabled=!state.token;
+    if(approvalStatus==="approved")status.textContent="Resultado aprovado";
+    else if(approvalStatus==="rejected")status.textContent="Resultado rejeitado";
+  }
+  function rememberOrganizationTask(task){
+    organizationTask=task||null;
+    if(task&&typeof task.task_id==="string")sessionStorage.setItem(ORGANIZATION_TASK_KEY,task.task_id);
+    renderOrganizationTaskConsole();
+  }
+  async function loadOrganizationTask(taskId){
+    if(!state.token){openPairDialog();return;}
+    if(typeof taskId!=="string"||!/^orgtask_[0-9a-f]{32}$/.test(taskId))return;
+    try{
+      const task=await readJson(await api("/runtime/organization/tasks/"+encodeURIComponent(taskId)));
+      rememberOrganizationTask(task);
+      showOrganizationTaskResult({status:task.status,task_id:task.task_id,assigned_agent:task.assigned_agent,durable_receipt:task.durable_receipt,message_id:task.message_id,result_sha256:task.result_sha256,approval_status:task.approval_status,approval_by:task.approval_by,result:task.result});
+    }catch(error){
+      showOrganizationTaskResult("Não foi possível consultar a tarefa: "+error.message);
+      if(!state.token)openPairDialog();
+    }
+  }
+  async function restoreOrganizationTask(){
+    if(organizationTaskRestoreStarted||!state.token)return;
+    organizationTaskRestoreStarted=true;
+    const taskId=sessionStorage.getItem(ORGANIZATION_TASK_KEY)||"";
+    if(taskId)await loadOrganizationTask(taskId);
+  }
+  async function createOrganizationTask(){
+    if(!state.token){openPairDialog();return;}
+    const button=$("orgTaskCreateButton"),kind=$("orgTaskKind"),repository=$("orgRepositoryId");
+    const taskKind=kind?kind.value:"",repositoryId=repository?repository.value.trim():"";
+    if(!["repository_inventory","python_source_analysis","python_test_inventory"].includes(taskKind)){
+      showOrganizationTaskResult("Tipo de ordem não permitido.");return;
+    }
+    if(!/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/.test(repositoryId)){
+      showOrganizationTaskResult("Introduz um ID válido da allowlist do PC. Não introduzas um caminho de ficheiro.");return;
+    }
+    if(button)button.disabled=true;
+    showOrganizationTaskResult("A enviar ordem tipada ao DGM-MAT…");
+    try{
+      const response=await readJson(await api("/runtime/organization/tasks",{method:"POST",body:JSON.stringify({task_kind:taskKind,repository_id:repositoryId})}));
+      rememberOrganizationTask(response.task||null);
+      showOrganizationTaskResult({status:response.status,dispatch:response.dispatch||null,reason:response.reason||null,task:response.task||null});
+    }catch(error){
+      showOrganizationTaskResult("Ordem não confirmada: "+error.message);
+      if(!state.token)openPairDialog();
+    }finally{if(button)button.disabled=!state.token;}
+  }
+  async function resumeOrganizationTask(){
+    if(!organizationTask||!state.token)return;
+    const button=$("orgTaskResumeButton");if(button)button.disabled=true;
+    try{
+      const response=await readJson(await api("/runtime/organization/tasks/"+encodeURIComponent(organizationTask.task_id)+"/dispatch",{method:"POST"}));
+      rememberOrganizationTask(response.task||organizationTask);
+      showOrganizationTaskResult({status:response.status,dispatch:response.dispatch||null,task:response.task||null});
+    }catch(error){showOrganizationTaskResult("A retoma não foi confirmada: "+error.message);}
+    finally{if(button)button.disabled=false;}
+  }
+  async function requestOrganizationResultApproval(){
+    if(!organizationTask||!organizationTask.result_sha256||!state.token)return;
+    const button=$("orgTaskReviewButton");if(button)button.disabled=true;
+    try{
+      const response=await readJson(await api("/runtime/organization/tasks/"+encodeURIComponent(organizationTask.task_id)+"/approval",{method:"POST",body:JSON.stringify({result_sha256:organizationTask.result_sha256})}));
+      await loadOrganizationTask(organizationTask.task_id);
+      showOrganizationTaskResult({approval:response,result:organizationTask&&organizationTask.result,result_sha256:organizationTask&&organizationTask.result_sha256});
+    }catch(error){showOrganizationTaskResult("Não foi possível pedir aprovação: "+error.message);}
+    finally{if(button)button.disabled=false;}
+  }
+  async function decideOrganizationResult(decision){
+    if(!organizationTask||!organizationTask.result_sha256||!state.token)return;
+    const reason=$("orgTaskRejectReason"),reasonText=reason?reason.value.trim():"";
+    if(decision==="reject"&&!reasonText){showOrganizationTaskResult("Indica o motivo da rejeição antes de continuar.");if(reason)reason.focus();return;}
+    const button=$(decision==="approve"?"orgTaskApproveButton":"orgTaskRejectButton");if(button)button.disabled=true;
+    try{
+      const response=await readJson(await api("/runtime/organization/tasks/"+encodeURIComponent(organizationTask.task_id)+"/decision",{method:"POST",body:JSON.stringify({decision,result_sha256:organizationTask.result_sha256,reason:reasonText})}));
+      await loadOrganizationTask(organizationTask.task_id);
+      showOrganizationTaskResult({decision:response,result:organizationTask&&organizationTask.result,result_sha256:organizationTask&&organizationTask.result_sha256});
+      if(reason)reason.value="";
+    }catch(error){showOrganizationTaskResult("A decisão não foi confirmada: "+error.message);}
+    finally{if(button)button.disabled=false;}
   }
   function renderRecentMissionActivity(missions){
     const list=$("officeMissionActivity"),empty=$("officeActivityEmpty");
@@ -278,7 +395,7 @@
     $("officeViewButton").setAttribute("aria-pressed",String(office));
     $("conversationTitle").textContent=office?"Escritório digital DGM-MAT":(active()&&active().title||"Nova conversa");
     $("contextLine").textContent=office?"Vista observacional · telemetria autenticada":"DGM-MAT · PC local";
-    if(office){renderOffice();probeOfficeTelemetry();}
+    if(office){renderOffice();probeOfficeTelemetry();restoreOrganizationTask();}
   }
   let lastRepairProbe=0;
   let lastCommandCatalogProbe=0;
@@ -729,6 +846,12 @@
   $("newChat").addEventListener("click",newDraft);
   $("motorRefresh").addEventListener("click",()=>probeMotors(true));
   $("e2eTestButton").addEventListener("click",runEndToEndTest);
+  $("orgTaskCreateButton").addEventListener("click",createOrganizationTask);
+  $("orgTaskRefreshButton").addEventListener("click",()=>organizationTask&&loadOrganizationTask(organizationTask.task_id));
+  $("orgTaskResumeButton").addEventListener("click",resumeOrganizationTask);
+  $("orgTaskReviewButton").addEventListener("click",requestOrganizationResultApproval);
+  $("orgTaskApproveButton").addEventListener("click",()=>decideOrganizationResult("approve"));
+  $("orgTaskRejectButton").addEventListener("click",()=>decideOrganizationResult("reject"));
   $("runCommandButton").addEventListener("click",runSelectedCommand);
   $("commandSelect").addEventListener("change",syncCommandTargetField);
   $("refreshButton").addEventListener("click",refresh);

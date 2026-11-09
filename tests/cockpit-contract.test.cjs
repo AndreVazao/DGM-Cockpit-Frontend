@@ -285,7 +285,7 @@ test("cockpit displays durable task receipts and resumes queued work only on exp
   assert.ok(app.includes('api("/runtime/organization/tasks/"+encodeURIComponent(organizationTask.task_id)+"/dispatch"'));
   assert.match(app, /async function resumeOrganizationTask\(\)/);
   assert.match(app, /durable_receipt/);
-  assert.match(app, /msg/);
+  assert.match(app, /message_id/);
   assert.match(html, /id="orgTaskResumeButton"/);
 });
 
